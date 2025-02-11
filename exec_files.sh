@@ -11,5 +11,6 @@ python wec.py examples/some_builtin_funcs.wec
 python wec.py examples/files.wec
 python wec.py examples/import_test/main.wec
 python wec.py examples/matrix.wec
+python wec.py examples/simple_nn/main.wec
 
 echo "Done!"

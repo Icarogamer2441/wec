@@ -524,6 +524,13 @@ class Interpreter:
                 return lambda *args: self.call_method(receiver, method, args, env)
             raise Exception(f"Field or method '{expr.member}' not found in instance of {receiver.class_def.name}")
 
+        # Se o receptor for um EnumDef, procure na lista de variantes.
+        if isinstance(receiver, EnumDef):
+            if hasattr(receiver, "variants") and (expr.member in receiver.variants):
+                return EnumValue(receiver, expr.member)
+            else:
+                raise Exception(f"Enum variant '{expr.member}' not found in enum {receiver.name}")
+
         # Se o receptor for um dicionário (por exemplo, um módulo ou built-in registrado), faça lookup no dicionário.
         if isinstance(receiver, dict):
             member = receiver.get(expr.member)
