@@ -297,7 +297,7 @@ class Interpreter:
             else:
                 raise Exception("Invalid assignment target")
         else:
-            raise Exception("Instrução desconhecida: " + str(stmt))
+            raise Exception("Unknown statement: " + str(stmt))
     def evaluate(self, expr, env):
         if isinstance(expr, Literal):
             return expr.value

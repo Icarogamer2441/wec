@@ -101,7 +101,7 @@ def t_COMMENT(t):
     pass
 
 def t_error(t):
-    print("Caractere ilegal: '%s'" % t.value[0])
+    print("Illegal character: '%s'" % t.value[0])
     t.lexer.skip(1)
 
 lexer = lex.lex()
@@ -649,9 +649,9 @@ def p_import_decl(p):
 
 def p_error(p):
     if p:
-        print("Erro sintático no token", p.type, "com valor", p.value)
+        print("Syntax error at token", p.type, "with value", p.value)
     else:
-        print("Erro sintático: EOF")
+        print("Syntax error: EOF")
 
 parser = yacc.yacc()
 

@@ -5,13 +5,13 @@ from interpreter import Interpreter
 
 def main():
     if len(sys.argv) < 2:
-        print("Uso: wec.py [-i] <arquivo fonte>")
+        print("Usage: wec.py [-i] <source file>")
         sys.exit(1)
 
     # Verifica se o modo de instalação foi passado.
     if sys.argv[1] == "-i":
         if len(sys.argv) < 3:
-            print("Uso: wec.py -i <arquivo.wec>")
+            print("Usage: wec.py -i <source.wec>")
             sys.exit(1)
         file_to_install = sys.argv[2]
         import os
@@ -22,9 +22,9 @@ def main():
         dest_file = os.path.join(dest_dir, os.path.basename(file_to_install))
         try:
             shutil.copy(file_to_install, dest_file)
-            print(f"Arquivo '{file_to_install}' instalado em '{dest_file}'.")
+            print(f"File '{file_to_install}' installed at '{dest_file}'.")
         except Exception as e:
-            print(f"Erro ao copiar o arquivo: {e}")
+            print(f"Error copying file: {e}")
         sys.exit(0)
     else:
         filename = sys.argv[1]
