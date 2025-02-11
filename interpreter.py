@@ -4,8 +4,9 @@ Utiliza os nós da AST definidos em parser_lexer.py e executa
 o código interpretado, realizando verificações de tipo simples.
 """
 
-from parser_lexer import Program, FunctionDef, VarDecl, ReturnStmt, ExprStmt, Block, CallExpr, MemberAccess, Literal, Identifier, ListExpr, Arg, IfStmt, BinOp, StructDef, EnumDef, JoinDef, RecordLiteral, ClassDef, NewExpr, Assignment
+from parser_lexer import Program, FunctionDef, VarDecl, ReturnStmt, ExprStmt, Block, CallExpr, MemberAccess, Literal, Identifier, ListExpr, Arg, IfStmt, BinOp, StructDef, EnumDef, JoinDef, RecordLiteral, ClassDef, NewExpr, Assignment, UnaryOp
 import re
+import math
 
 # Exceção para controlar a instrução return
 class ReturnException(Exception):
@@ -23,7 +24,10 @@ class Environment:
         elif self.outer:
             return self.outer.get(key)
         else:
-            raise Exception("Undefined variable: " + key)
+            # ADDED: Provide file and line number info for easier debugging.
+            import traceback
+            tb = traceback.extract_stack()[-2]  # get caller's info
+            raise Exception(f"Undefined variable: {key} (at {tb.filename}, line {tb.lineno})")
     def set(self, key, value):
         self.values[key] = value
     def get_type(self, key):
@@ -131,6 +135,28 @@ def wec_join_float(*args):
 def wec_type_of(val):
     return get_type(val)
 
+def wec_exp(val):
+    # Se o valor for uma matriz, aplicar math.exp em cada elemento.
+    if isinstance(val, WECMatrix):
+         result = WECMatrix()
+         result.to(val.dimensions)
+         result.wec_type = val.wec_type
+         for row in val:
+             new_row = WECList()
+             new_row.wec_type = row.wec_type if hasattr(row, "wec_type") else "i32List"
+             for element in row:
+                 new_row.append(math.exp(element))
+             result.append(new_row)
+         return result
+    elif isinstance(val, WECList):
+         new_list = WECList()
+         new_list.wec_type = val.wec_type if hasattr(val, "wec_type") else "i32List"
+         for element in val:
+             new_list.append(math.exp(element))
+         return new_list
+    else:
+         return math.exp(val)
+
 # Add built-in file support
 
 class WECFile:
@@ -202,9 +228,12 @@ class Interpreter:
             "join_int": wec_join_int,
             "join_float": wec_join_float,
             "type_of": wec_type_of,
+            "exp": wec_exp,
             "File": WECFileBuiltin()  # Register the built-in File type.
         }
         env.set("wec", wec_module)
+        # ADDED: Register the built-in i32Matrix type with its "random" static method.
+        env.set("i32Matrix", {"random": i32Matrix_random})
     def interpret(self, program):
         # First, process import declarations.
         if hasattr(program, "imports"):
@@ -215,6 +244,10 @@ class Interpreter:
         if hasattr(program, "types"):
             for type_def in program.types:
                 self.global_env.set(type_def.name, type_def)
+        # ADDED: Register class definitions to support the new "new NeuralNetwork(...)" syntax.
+        if hasattr(program, "classes"):
+            for class_def in program.classes:
+                self.global_env.set(class_def.name, class_def)
         for func in program.functions:
             self.global_env.set(func.name, func)
         # Look for the main function
@@ -250,6 +283,9 @@ class Interpreter:
             if stmt.initializer is None:
                 if stmt.type.endswith("List"):
                     value = WECList()
+                    value.wec_type = stmt.type
+                elif stmt.type.endswith("Matrix"):   # ADDED: create a matrix instance if type endswith "Matrix"
+                    value = WECMatrix()
                     value.wec_type = stmt.type
                 else:
                     value = None
@@ -305,6 +341,12 @@ class Interpreter:
             return env.get(expr.name)
         elif isinstance(expr, ListExpr):
             return [self.evaluate(el, env) for el in expr.elements]
+        elif isinstance(expr, UnaryOp):
+            value = self.evaluate(expr.value, env)
+            if expr.op == '-':
+                return -value
+            else:
+                raise Exception("Unknown unary operator: " + expr.op)
         elif isinstance(expr, MemberAccess):
             return self.evaluate_member_access(expr, env)
         elif isinstance(expr, CallExpr):
@@ -364,12 +406,6 @@ class Interpreter:
             raise Exception("Unknown expression: " + str(expr))
 
     def evaluate_new_expr(self, node, env):
-        """
-        Avalia uma expressão 'new'. Obtém a definição de classe a partir do ambiente
-        de tipos global (supondo que ele esteja disponível via, por exemplo, env.get_type).
-        Cria uma instância e, se houver um 'constructor', invoca-o e armazena o resultado
-        no campo 'call' da instância.
-        """
         # If the new expression node has an extra attribute 'member', combine it with type_name.
         if hasattr(node, "member") and node.member:
             node.type_name = f"{node.type_name}::{node.member}"
@@ -477,41 +513,40 @@ class Interpreter:
                 break
         return instance
 
-    def evaluate_member_access(self, node, env):
-        receiver = self.evaluate(node.receiver, env)
-        if isinstance(receiver, EnumDef):
-            # If the receiver is an enum definition, look for the variant.
-            if hasattr(receiver, "variants") and (node.member in receiver.variants):
-                return EnumValue(receiver, node.member)
-            else:
-                raise Exception(f"Enum variant '{node.member}' not found in enum {receiver.name}")
-        elif isinstance(receiver, Instance):
-            if node.member in receiver.fields:
-                return receiver.fields[node.member]
-            else:
-                method = receiver.get_method(node.member)
-                if method is not None:
-                    return lambda *args: self.call_method(receiver, method, args, env)
-                raise Exception(f"Method or field '{node.member}' not found in instance of {receiver.class_def.name}")
-        elif isinstance(receiver, dict):
-            if node.member in receiver:
-                return receiver[node.member]
-            else:
-                method = receiver.get_method(node.member)
-                if method is not None:
-                    return lambda *args: self.call_method(receiver, method, args, env)
-                raise Exception(f"Method or field '{node.member}' not found in dictionary")
-        elif isinstance(receiver, (int, float, str)):
-            if node.member == "to_str":
-                return lambda *args: str(receiver)
-            elif node.member == "to_int":
+    def evaluate_member_access(self, expr, env):
+        receiver = self.evaluate(expr.receiver, env)
+        # Se o receptor for uma instância (do tipo Instance), busque primeiro nos campos.
+        if isinstance(receiver, Instance):
+            if expr.member in receiver.fields:
+                return receiver.fields[expr.member]
+            method = receiver.get_method(expr.member)
+            if method is not None:
+                return lambda *args: self.call_method(receiver, method, args, env)
+            raise Exception(f"Field or method '{expr.member}' not found in instance of {receiver.class_def.name}")
+
+        # Se o receptor for um dicionário (por exemplo, um módulo ou built-in registrado), faça lookup no dicionário.
+        if isinstance(receiver, dict):
+            member = receiver.get(expr.member)
+            if member is None:
+                raise Exception(f"Member '{expr.member}' not found in {receiver}")
+            return member
+
+        # Se o receptor for uma primitiva (int, float, str), trate métodos especiais.
+        if isinstance(receiver, (int, float, str)):
+            if expr.member == "to_int":
                 return lambda *args: int(receiver)
-            elif node.member == "to_float":
+            elif expr.member == "to_str":
+                return lambda *args: str(receiver)
+            elif expr.member == "to_float":
                 return lambda *args: float(receiver)
             else:
-                raise Exception(f"Member '{node.member}' not found in primitive type {type(receiver).__name__}")
-        else:
-            return getattr(receiver, node.member)
+                raise Exception(f"Member '{expr.member}' not found in primitive type {type(receiver).__name__}")
+
+        # Caso contrário, caia no lookup padrão usando getattr.
+        try:
+            return getattr(receiver, expr.member)
+        except AttributeError:
+            raise Exception(f"Member '{expr.member}' not found in object {receiver}")
     
     def call_method(self, instance, method, args, env):
         local_env = Environment(outer=env)
@@ -633,3 +668,535 @@ class WECList(list):
             if func(item):
                 newList.append(item)
         return newList
+
+class WECMatrix(list):
+    def to(self, dims):
+        # Set the number of dimensions (allow between 1 and 10)
+        if not (1 <= dims <= 10):
+            raise Exception("Matrix dimensions must be between 1 and 10")
+        self.dimensions = dims
+        return self  # allow chaining if desired
+
+    def append(self, value):
+        # If the matrix has a dimension set and value is a list, handle as a row or multiple rows.
+        if hasattr(self, "dimensions") and self.dimensions and isinstance(value, list):
+            # If the value is a list of rows (each row is a list), then iterate and append each row.
+            if len(value) > 0 and any(isinstance(x, list) for x in value):
+                for row in value:
+                    if not isinstance(row, WECList):
+                        new_row = WECList(row)
+                        new_row.wec_type = self.wec_type.replace("Matrix", "List") if hasattr(self, "wec_type") else "List"
+                        super(WECMatrix, self).append(new_row)
+                    else:
+                        super(WECMatrix, self).append(row)
+                return
+            else:
+                # Otherwise, treat value as a single row (a list of elements)
+                new_row = WECList(value)
+                new_row.wec_type = self.wec_type.replace("Matrix", "List") if hasattr(self, "wec_type") else "List"
+                super(WECMatrix, self).append(new_row)
+                return
+        # Fallback to default list behavior
+        super(WECMatrix, self).append(value)
+
+    def dot(self, other):
+        # Realiza a multiplicação de matrizes.
+        if not self or not other:
+            raise Exception("Empty matrix cannot be used for dot multiplication")
+        # Assume que self tem dimensão (r x c) e other tem (c x k)
+        r = len(self)
+        c = len(self[0])
+        # Verifica que todas as linhas de self têm o mesmo número de colunas
+        for row in self:
+            if len(row) != c:
+                raise Exception("Inconsistent dimensions in first matrix")
+        if len(other) != c:
+            raise Exception("Incompatible dimensions for matrix multiplication")
+        k = len(other[0])
+        result = WECMatrix()
+        result.to(self.dimensions)   # assume uma matriz 2D
+        result.wec_type = self.wec_type
+        for i in range(r):
+            new_row = WECList()
+            new_row.wec_type = "i32List"
+            for j in range(k):
+                sum_val = 0
+                for p in range(c):
+                    sum_val += self[i][p] * other[p][j]
+                new_row.append(sum_val)
+            result.append(new_row)
+        return result
+
+    def transpose(self):
+        # Retorna a transposta da matriz.
+        if not self:
+            return WECMatrix()
+        r = len(self)
+        c = len(self[0])
+        result = WECMatrix()
+        result.to(self.dimensions)
+        result.wec_type = self.wec_type
+        for j in range(c):
+            new_row = WECList()
+            new_row.wec_type = "i32List"
+            for i in range(r):
+                new_row.append(self[i][j])
+            result.append(new_row)
+        return result
+
+    def __add__(self, other):
+        # Se other é um escalar, soma elemento a elemento.
+        if isinstance(other, (int, float)):
+            result = WECMatrix()
+            result.to(self.dimensions)
+            result.wec_type = self.wec_type
+            for row in self:
+                new_row = WECList()
+                new_row.wec_type = row.wec_type if hasattr(row, "wec_type") else "i32List"
+                for element in row:
+                    new_row.append(element + other)
+                result.append(new_row)
+            return result
+        elif isinstance(other, WECMatrix):
+            # Elementwise addition with broadcasting support among matrices
+            rows_self = len(self)
+            cols_self = len(self[0]) if rows_self > 0 else 0
+            rows_other = len(other)
+            cols_other = len(other[0]) if rows_other > 0 else 0
+
+            if rows_self == rows_other:
+                result_rows = rows_self
+            elif rows_self == 1:
+                result_rows = rows_other
+            elif rows_other == 1:
+                result_rows = rows_self
+            else:
+                raise Exception("Incompatible row dimensions for matrix addition")
+
+            if cols_self == cols_other:
+                result_cols = cols_self
+            elif cols_self == 1:
+                result_cols = cols_other
+            elif cols_other == 1:
+                result_cols = cols_self
+            else:
+                raise Exception("Incompatible column dimensions for matrix addition")
+
+            result = WECMatrix()
+            result.to(self.dimensions)   # Preserva a mesma configuração de dimensão (normalmente 2D)
+            result.wec_type = self.wec_type
+            for i in range(result_rows):
+                new_row = WECList()
+                new_row.wec_type = "i32List"
+                for j in range(result_cols):
+                    if rows_self == 1:
+                        val_self = self[0][0] if cols_self == 1 else self[0][j]
+                    else:
+                        val_self = self[i][0] if cols_self == 1 else self[i][j]
+
+                    if rows_other == 1:
+                        val_other = other[0][0] if cols_other == 1 else other[0][j]
+                    else:
+                        val_other = other[i][0] if cols_other == 1 else other[i][j]
+
+                    new_row.append(val_self + val_other)
+                result.append(new_row)
+            return result
+        else:
+            raise Exception("Addition not supported between matrix and non-matrix")
+
+    def __radd__(self, other):
+        # Se o operando à esquerda é um escalar, use a definição de __add__
+        if isinstance(other, (int, float)):
+            return self.__add__(other)
+        else:
+            raise Exception("Addition not supported for these operands")
+
+    def __sub__(self, other):
+        # Se other é um escalar, faz a subtração elemento a elemento.
+        if isinstance(other, (int, float)):
+            result = WECMatrix()
+            result.to(self.dimensions)
+            result.wec_type = self.wec_type
+            for row in self:
+                new_row = WECList()
+                new_row.wec_type = row.wec_type if hasattr(row, "wec_type") else "i32List"
+                for element in row:
+                    new_row.append(element - other)
+                result.append(new_row)
+            return result
+        elif isinstance(other, WECMatrix):
+            rows_self = len(self)
+            cols_self = len(self[0]) if rows_self > 0 else 0
+            rows_other = len(other)
+            cols_other = len(other[0]) if rows_other > 0 else 0
+
+            if rows_self == rows_other:
+                result_rows = rows_self
+            elif rows_self == 1:
+                result_rows = rows_other
+            elif rows_other == 1:
+                result_rows = rows_self
+            else:
+                raise Exception("Incompatible row dimensions for matrix subtraction")
+
+            if cols_self == cols_other:
+                result_cols = cols_self
+            elif cols_self == 1:
+                result_cols = cols_other
+            elif cols_other == 1:
+                result_cols = cols_self
+            else:
+                raise Exception("Incompatible column dimensions for matrix subtraction")
+
+            result = WECMatrix()
+            result.to(self.dimensions)
+            result.wec_type = self.wec_type
+            for i in range(result_rows):
+                new_row = WECList()
+                new_row.wec_type = "i32List"
+                for j in range(result_cols):
+                    if rows_self == 1:
+                        val_self = self[0][0] if cols_self == 1 else self[0][j]
+                    else:
+                        val_self = self[i][0] if cols_self == 1 else self[i][j]
+
+                    if rows_other == 1:
+                        val_other = other[0][0] if cols_other == 1 else other[0][j]
+                    else:
+                        val_other = other[i][0] if cols_other == 1 else other[i][j]
+
+                    new_row.append(val_self - val_other)
+                result.append(new_row)
+            return result
+        else:
+            raise Exception("Subtraction not supported between matrix and non-matrix")
+
+    def __rsub__(self, other):
+        # Se o operando à esquerda é um escalar, computa escalar - matrix elemento a elemento.
+        if isinstance(other, (int, float)):
+            result = WECMatrix()
+            result.to(self.dimensions)
+            result.wec_type = self.wec_type
+            for row in self:
+                new_row = WECList()
+                new_row.wec_type = row.wec_type if hasattr(row, "wec_type") else "i32List"
+                for element in row:
+                    new_row.append(other - element)
+                result.append(new_row)
+            return result
+        else:
+            raise Exception("Subtraction not supported for these operands")
+
+    def __neg__(self):
+        # Retorna uma nova matriz com cada elemento negado
+        result = WECMatrix()
+        result.to(self.dimensions)
+        result.wec_type = self.wec_type
+        for row in self:
+            new_row = WECList()
+            new_row.wec_type = "i32List"
+            for element in row:
+                new_row.append(-element)
+            result.append(new_row)
+        return result
+
+    def __mul__(self, other):
+         if isinstance(other, (int, float)):
+             result = WECMatrix()
+             result.to(self.dimensions)
+             result.wec_type = self.wec_type
+             for row in self:
+                 new_row = WECList()
+                 new_row.wec_type = row.wec_type if hasattr(row, "wec_type") else "i32List"
+                 for element in row:
+                     new_row.append(element * other)
+                 result.append(new_row)
+             return result
+         elif isinstance(other, WECMatrix):
+             # Elementwise multiplication com broadcasting
+             rows_self = len(self)
+             cols_self = len(self[0]) if rows_self > 0 else 0
+             rows_other = len(other)
+             cols_other = len(other[0]) if rows_other > 0 else 0
+ 
+             if rows_self == rows_other:
+                 result_rows = rows_self
+             elif rows_self == 1:
+                 result_rows = rows_other
+             elif rows_other == 1:
+                 result_rows = rows_self
+             else:
+                 raise Exception("Incompatible row dimensions for matrix multiplication")
+ 
+             if cols_self == cols_other:
+                 result_cols = cols_self
+             elif cols_self == 1:
+                 result_cols = cols_other
+             elif cols_other == 1:
+                 result_cols = cols_self
+             else:
+                 raise Exception("Incompatible column dimensions for matrix multiplication")
+ 
+             result = WECMatrix()
+             result.to(self.dimensions)
+             result.wec_type = self.wec_type
+             for i in range(result_rows):
+                 new_row = WECList()
+                 new_row.wec_type = "i32List"
+                 for j in range(result_cols):
+                     if rows_self == 1:
+                         val_self = self[0][0] if cols_self == 1 else self[0][j]
+                     else:
+                         val_self = self[i][0] if cols_self == 1 else self[i][j]
+                     if rows_other == 1:
+                         val_other = other[0][0] if cols_other == 1 else other[0][j]
+                     else:
+                         val_other = other[i][0] if cols_other == 1 else other[i][j]
+                     new_row.append(val_self * val_other)
+                 result.append(new_row)
+             return result
+         else:
+             raise Exception("Multiplication not supported between matrix and non-matrix")
+
+    def __rmul__(self, other):
+         if isinstance(other, (int, float)):
+             return self.__mul__(other)
+         else:
+             raise Exception("Multiplication not supported for these operands")
+
+    def __truediv__(self, other):
+         if isinstance(other, (int, float)):
+             if other == 0:
+                 raise Exception("Division by zero")
+             result = WECMatrix()
+             result.to(self.dimensions)
+             result.wec_type = self.wec_type
+             for row in self:
+                 new_row = WECList()
+                 new_row.wec_type = row.wec_type if hasattr(row, "wec_type") else "i32List"
+                 for element in row:
+                     new_row.append(element / other)
+                 result.append(new_row)
+             return result
+         elif isinstance(other, WECMatrix):
+             # Elementwise division com broadcasting
+             rows_self = len(self)
+             cols_self = len(self[0]) if rows_self > 0 else 0
+             rows_other = len(other)
+             cols_other = len(other[0]) if rows_other > 0 else 0
+ 
+             if rows_self == rows_other:
+                 result_rows = rows_self
+             elif rows_self == 1:
+                 result_rows = rows_other
+             elif rows_other == 1:
+                 result_rows = rows_self
+             else:
+                 raise Exception("Incompatible row dimensions for matrix division")
+ 
+             if cols_self == cols_other:
+                 result_cols = cols_self
+             elif cols_self == 1:
+                 result_cols = cols_other
+             elif cols_other == 1:
+                 result_cols = cols_self
+             else:
+                 raise Exception("Incompatible column dimensions for matrix division")
+ 
+             result = WECMatrix()
+             result.to(self.dimensions)
+             result.wec_type = self.wec_type
+             for i in range(result_rows):
+                 new_row = WECList()
+                 new_row.wec_type = "i32List"
+                 for j in range(result_cols):
+                     if rows_self == 1:
+                         val_self = self[0][0] if cols_self == 1 else self[0][j]
+                     else:
+                         val_self = self[i][0] if cols_self == 1 else self[i][j]
+                     if rows_other == 1:
+                         val_other = other[0][0] if cols_other == 1 else other[0][j]
+                     else:
+                         val_other = other[i][0] if cols_other == 1 else other[i][j]
+                     if val_other == 0:
+                         raise Exception("Division by zero in matrix division")
+                     new_row.append(val_self / val_other)
+                 result.append(new_row)
+             return result
+         else:
+             raise Exception("Division not supported between matrix and non-matrix")
+
+    def __rtruediv__(self, other):
+         if isinstance(other, (int, float)):
+             result = WECMatrix()
+             result.to(self.dimensions)
+             result.wec_type = self.wec_type
+             for row in self:
+                 new_row = WECList()
+                 new_row.wec_type = row.wec_type if hasattr(row, "wec_type") else "i32List"
+                 for element in row:
+                     if element == 0:
+                         raise Exception("Division by zero in matrix division")
+                     new_row.append(other / element)
+                 result.append(new_row)
+             return result
+         else:
+             raise Exception("Division not supported for these operands")
+
+    def __mod__(self, other):
+         if isinstance(other, (int, float)):
+             result = WECMatrix()
+             result.to(self.dimensions)
+             result.wec_type = self.wec_type
+             for row in self:
+                 new_row = WECList()
+                 new_row.wec_type = row.wec_type if hasattr(row, "wec_type") else "i32List"
+                 for element in row:
+                     new_row.append(element % other)
+                 result.append(new_row)
+             return result
+         elif isinstance(other, WECMatrix):
+             rows_self = len(self)
+             cols_self = len(self[0]) if rows_self > 0 else 0
+             rows_other = len(other)
+             cols_other = len(other[0]) if rows_other > 0 else 0
+ 
+             if rows_self == rows_other:
+                 result_rows = rows_self
+             elif rows_self == 1:
+                 result_rows = rows_other
+             elif rows_other == 1:
+                 result_rows = rows_self
+             else:
+                 raise Exception("Incompatible row dimensions for matrix modulo")
+ 
+             if cols_self == cols_other:
+                 result_cols = cols_self
+             elif cols_self == 1:
+                 result_cols = cols_other
+             elif cols_other == 1:
+                 result_cols = cols_self
+             else:
+                 raise Exception("Incompatible column dimensions for matrix modulo")
+ 
+             result = WECMatrix()
+             result.to(self.dimensions)
+             result.wec_type = self.wec_type
+             for i in range(result_rows):
+                 new_row = WECList()
+                 new_row.wec_type = "i32List"
+                 for j in range(result_cols):
+                     if rows_self == 1:
+                         val_self = self[0][0] if cols_self == 1 else self[0][j]
+                     else:
+                         val_self = self[i][0] if cols_self == 1 else self[i][j]
+                     if rows_other == 1:
+                         val_other = other[0][0] if cols_other == 1 else other[0][j]
+                     else:
+                         val_other = other[i][0] if cols_other == 1 else other[i][j]
+                     new_row.append(val_self % val_other)
+                 result.append(new_row)
+             return result
+         else:
+             raise Exception("Modulo not supported between matrix and non-matrix")
+
+    def __rmod__(self, other):
+         if isinstance(other, (int, float)):
+             result = WECMatrix()
+             result.to(self.dimensions)
+             result.wec_type = self.wec_type
+             for row in self:
+                 new_row = WECList()
+                 new_row.wec_type = row.wec_type if hasattr(row, "wec_type") else "i32List"
+                 for element in row:
+                     new_row.append(other % element)
+                 result.append(new_row)
+             return result
+         else:
+             raise Exception("Modulo not supported for these operands")
+
+    def __pow__(self, other):
+         if isinstance(other, (int, float)):
+             result = WECMatrix()
+             result.to(self.dimensions)
+             result.wec_type = self.wec_type
+             for row in self:
+                 new_row = WECList()
+                 new_row.wec_type = row.wec_type if hasattr(row, "wec_type") else "i32List"
+                 for element in row:
+                     new_row.append(element ** other)
+                 result.append(new_row)
+             return result
+         elif isinstance(other, WECMatrix):
+             rows_self = len(self)
+             cols_self = len(self[0]) if rows_self > 0 else 0
+             rows_other = len(other)
+             cols_other = len(other[0]) if rows_other > 0 else 0
+ 
+             if rows_self == rows_other:
+                 result_rows = rows_self
+             elif rows_self == 1:
+                 result_rows = rows_other
+             elif rows_other == 1:
+                 result_rows = rows_self
+             else:
+                 raise Exception("Incompatible row dimensions for matrix exponentiation")
+ 
+             if cols_self == cols_other:
+                 result_cols = cols_self
+             elif cols_self == 1:
+                 result_cols = cols_other
+             elif cols_other == 1:
+                 result_cols = cols_self
+             else:
+                 raise Exception("Incompatible column dimensions for matrix exponentiation")
+ 
+             result = WECMatrix()
+             result.to(self.dimensions)
+             result.wec_type = self.wec_type
+             for i in range(result_rows):
+                 new_row = WECList()
+                 new_row.wec_type = "i32List"
+                 for j in range(result_cols):
+                     if rows_self == 1:
+                         val_self = self[0][0] if cols_self == 1 else self[0][j]
+                     else:
+                         val_self = self[i][0] if cols_self == 1 else self[i][j]
+                     if rows_other == 1:
+                         val_other = other[0][0] if cols_other == 1 else other[0][j]
+                     else:
+                         val_other = other[i][0] if cols_other == 1 else other[i][j]
+                     new_row.append(val_self ** val_other)
+                 result.append(new_row)
+             return result
+         else:
+             raise Exception("Exponentiation not supported between matrix and non-matrix")
+
+    def __rpow__(self, other):
+         if isinstance(other, (int, float)):
+             result = WECMatrix()
+             result.to(self.dimensions)
+             result.wec_type = self.wec_type
+             for row in self:
+                 new_row = WECList()
+                 new_row.wec_type = row.wec_type if hasattr(row, "wec_type") else "i32List"
+                 for element in row:
+                     new_row.append(other ** element)
+                 result.append(new_row)
+             return result
+         else:
+             raise Exception("Exponentiation not supported for these operands")
+
+def i32Matrix_random(rows, cols):
+    import random
+    m = WECMatrix()
+    m.to(2)
+    m.wec_type = "i32Matrix"
+    for i in range(rows):
+        row = WECList()
+        row.wec_type = "i32List"
+        for j in range(cols):
+            row.append(random.randint(0, 9))
+        m.append(row)
+    return m

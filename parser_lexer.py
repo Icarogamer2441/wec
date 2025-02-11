@@ -4,6 +4,7 @@ Este módulo implementa o léxico e o parser da linguagem wec usando PLY.
 
 import ply.lex as lex
 import ply.yacc as yacc
+import sys
 
 # ------------------------------------------------------------
 # Tokens e regras léxicas
@@ -165,6 +166,13 @@ class Literal:
     def __init__(self, value):
         self.value = value
 
+class UnaryOp:
+    def __init__(self, op, value):
+         self.op = op
+         self.value = value
+    def __repr__(self):
+         return f"({self.op}{self.value})"
+
 class ListExpr:
     def __init__(self, elements):
         self.elements = elements
@@ -222,6 +230,7 @@ class ImportDecl:
 
 precedence = (
     ('nonassoc', 'IFX'),
+    ('right', 'UMINUS'),
     ('left', 'EQ', 'NE'),
     ('left', 'LT', 'LE', 'GT', 'GE'),
     ('left', 'PLUS', 'MINUS'),
@@ -649,9 +658,9 @@ def p_import_decl(p):
 
 def p_error(p):
     if p:
-        print("Syntax error at token", p.type, "with value", p.value)
+        print(f"Syntax error at token {p.type} with value {p.value} at line {p.lineno}", file=sys.stderr)
     else:
-        print("Syntax error: EOF")
+        print("Syntax error at EOF", file=sys.stderr)
 
 def p_qualified_identifier(p):
     """qualified_identifier : IDENT DDCOLON IDENT
@@ -660,6 +669,10 @@ def p_qualified_identifier(p):
          p[0] = p[1]
     else:
          p[0] = p[1] + "::" + p[3]
+
+def p_expression_unary(p):
+    "expression : MINUS expression %prec UMINUS"
+    p[0] = UnaryOp(op='-', value=p[2])
 
 parser = yacc.yacc()
 

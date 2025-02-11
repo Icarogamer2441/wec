@@ -119,6 +119,7 @@ Rule 113   assignment -> call_expr EQUAL expression
 Rule 114   import_decl -> IMPORT STRING SEMI
 Rule 115   qualified_identifier -> IDENT DDCOLON IDENT
 Rule 116   qualified_identifier -> IDENT
+Rule 117   expression -> MINUS expression
 
 Terminals, with rules where they appear
 
@@ -150,7 +151,7 @@ LE                   : 71
 LET                  : 35 61 62
 LPAREN               : 37 79 90 101 103
 LT                   : 72
-MINUS                : 67
+MINUS                : 67 117
 MOD                  : 70
 MODULE               : 13
 NE                   : 76
@@ -193,7 +194,7 @@ enum_variant_list    : 15 21
 expr_list            : 92 94
 expr_list_opt        : 91
 expr_statement       : 59
-expression           : 28 61 63 64 66 66 67 67 68 68 69 69 70 70 71 71 72 72 73 73 74 74 75 75 76 76 83 88 89 90 94 95 105 113
+expression           : 28 61 63 64 66 66 67 67 68 68 69 69 70 70 71 71 72 72 73 73 74 74 75 75 76 76 83 88 89 90 94 95 105 113 117
 field_assign         : 25 26
 field_assign_list    : 24 25
 field_decl           : 17 18
@@ -1363,6 +1364,7 @@ state 103
     LET             reduce using rule 104 (empty -> .)
     RETURN          reduce using rule 104 (empty -> .)
     IF              reduce using rule 104 (empty -> .)
+    MINUS           reduce using rule 104 (empty -> .)
     IDENT           reduce using rule 104 (empty -> .)
     LPAREN          reduce using rule 104 (empty -> .)
     LBRACKET        reduce using rule 104 (empty -> .)
@@ -1477,6 +1479,7 @@ state 111
     (74) expression -> . expression GT expression
     (75) expression -> . expression EQ expression
     (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
     (77) call_expr -> . call_expr call_suffix
     (78) call_expr -> . primary
     (24) primary -> . IDENT LBRACE field_assign_list RBRACE
@@ -1495,15 +1498,16 @@ state 111
     LET             shift and go to state 122
     RETURN          shift and go to state 126
     IF              shift and go to state 127
+    MINUS           shift and go to state 129
     IDENT           shift and go to state 123
-    LPAREN          shift and go to state 130
-    LBRACKET        shift and go to state 131
-    NUMBER          shift and go to state 132
-    STRING          shift and go to state 133
-    TRUE            shift and go to state 134
-    FALSE           shift and go to state 135
-    NEW             shift and go to state 136
-    FN              shift and go to state 137
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
 
     statement                      shift and go to state 116
     var_decl                       shift and go to state 117
@@ -1514,7 +1518,7 @@ state 111
     expression                     shift and go to state 124
     assignment                     shift and go to state 125
     call_expr                      shift and go to state 128
-    primary                        shift and go to state 129
+    primary                        shift and go to state 130
 
 state 112
 
@@ -1524,6 +1528,7 @@ state 112
     LET             reduce using rule 55 (statement_list -> empty .)
     RETURN          reduce using rule 55 (statement_list -> empty .)
     IF              reduce using rule 55 (statement_list -> empty .)
+    MINUS           reduce using rule 55 (statement_list -> empty .)
     IDENT           reduce using rule 55 (statement_list -> empty .)
     LPAREN          reduce using rule 55 (statement_list -> empty .)
     LBRACKET        reduce using rule 55 (statement_list -> empty .)
@@ -1580,6 +1585,7 @@ state 115
     ELSE            reduce using rule 53 (block -> LBRACE statement_list RBRACE .)
     RETURN          reduce using rule 53 (block -> LBRACE statement_list RBRACE .)
     IF              reduce using rule 53 (block -> LBRACE statement_list RBRACE .)
+    MINUS           reduce using rule 53 (block -> LBRACE statement_list RBRACE .)
     IDENT           reduce using rule 53 (block -> LBRACE statement_list RBRACE .)
     LPAREN          reduce using rule 53 (block -> LBRACE statement_list RBRACE .)
     LBRACKET        reduce using rule 53 (block -> LBRACE statement_list RBRACE .)
@@ -1594,7 +1600,6 @@ state 115
     ARROW           reduce using rule 53 (block -> LBRACE statement_list RBRACE .)
     SEMI            reduce using rule 53 (block -> LBRACE statement_list RBRACE .)
     PLUS            reduce using rule 53 (block -> LBRACE statement_list RBRACE .)
-    MINUS           reduce using rule 53 (block -> LBRACE statement_list RBRACE .)
     TIMES           reduce using rule 53 (block -> LBRACE statement_list RBRACE .)
     DIVIDE          reduce using rule 53 (block -> LBRACE statement_list RBRACE .)
     MOD             reduce using rule 53 (block -> LBRACE statement_list RBRACE .)
@@ -1618,6 +1623,7 @@ state 116
     LET             reduce using rule 54 (statement_list -> statement_list statement .)
     RETURN          reduce using rule 54 (statement_list -> statement_list statement .)
     IF              reduce using rule 54 (statement_list -> statement_list statement .)
+    MINUS           reduce using rule 54 (statement_list -> statement_list statement .)
     IDENT           reduce using rule 54 (statement_list -> statement_list statement .)
     LPAREN          reduce using rule 54 (statement_list -> statement_list statement .)
     LBRACKET        reduce using rule 54 (statement_list -> statement_list statement .)
@@ -1637,6 +1643,7 @@ state 117
     LET             reduce using rule 56 (statement -> var_decl .)
     RETURN          reduce using rule 56 (statement -> var_decl .)
     IF              reduce using rule 56 (statement -> var_decl .)
+    MINUS           reduce using rule 56 (statement -> var_decl .)
     IDENT           reduce using rule 56 (statement -> var_decl .)
     LPAREN          reduce using rule 56 (statement -> var_decl .)
     LBRACKET        reduce using rule 56 (statement -> var_decl .)
@@ -1656,6 +1663,7 @@ state 118
     LET             reduce using rule 57 (statement -> assignment_statement .)
     RETURN          reduce using rule 57 (statement -> assignment_statement .)
     IF              reduce using rule 57 (statement -> assignment_statement .)
+    MINUS           reduce using rule 57 (statement -> assignment_statement .)
     IDENT           reduce using rule 57 (statement -> assignment_statement .)
     LPAREN          reduce using rule 57 (statement -> assignment_statement .)
     LBRACKET        reduce using rule 57 (statement -> assignment_statement .)
@@ -1675,6 +1683,7 @@ state 119
     LET             reduce using rule 58 (statement -> return_statement .)
     RETURN          reduce using rule 58 (statement -> return_statement .)
     IF              reduce using rule 58 (statement -> return_statement .)
+    MINUS           reduce using rule 58 (statement -> return_statement .)
     IDENT           reduce using rule 58 (statement -> return_statement .)
     LPAREN          reduce using rule 58 (statement -> return_statement .)
     LBRACKET        reduce using rule 58 (statement -> return_statement .)
@@ -1694,6 +1703,7 @@ state 120
     LET             reduce using rule 59 (statement -> expr_statement .)
     RETURN          reduce using rule 59 (statement -> expr_statement .)
     IF              reduce using rule 59 (statement -> expr_statement .)
+    MINUS           reduce using rule 59 (statement -> expr_statement .)
     IDENT           reduce using rule 59 (statement -> expr_statement .)
     LPAREN          reduce using rule 59 (statement -> expr_statement .)
     LBRACKET        reduce using rule 59 (statement -> expr_statement .)
@@ -1713,6 +1723,7 @@ state 121
     LET             reduce using rule 60 (statement -> if_statement .)
     RETURN          reduce using rule 60 (statement -> if_statement .)
     IF              reduce using rule 60 (statement -> if_statement .)
+    MINUS           reduce using rule 60 (statement -> if_statement .)
     IDENT           reduce using rule 60 (statement -> if_statement .)
     LPAREN          reduce using rule 60 (statement -> if_statement .)
     LBRACKET        reduce using rule 60 (statement -> if_statement .)
@@ -1729,7 +1740,7 @@ state 122
     (61) var_decl -> LET . IDENT COLON type_expr EQUAL expression SEMI
     (62) var_decl -> LET . IDENT COLON type_expr SEMI
 
-    IDENT           shift and go to state 138
+    IDENT           shift and go to state 139
 
 
 state 123
@@ -1738,7 +1749,7 @@ state 123
     (98) primary -> IDENT .
 
   ! shift/reduce conflict for LBRACE resolved as shift
-    LBRACE          shift and go to state 139
+    LBRACE          shift and go to state 140
     EQUAL           reduce using rule 98 (primary -> IDENT .)
     LPAREN          reduce using rule 98 (primary -> IDENT .)
     DOT             reduce using rule 98 (primary -> IDENT .)
@@ -1781,25 +1792,25 @@ state 124
     (75) expression -> expression . EQ expression
     (76) expression -> expression . NE expression
 
-    SEMI            shift and go to state 140
-    PLUS            shift and go to state 141
-    MINUS           shift and go to state 142
-    TIMES           shift and go to state 143
-    DIVIDE          shift and go to state 144
-    MOD             shift and go to state 145
-    LE              shift and go to state 146
-    LT              shift and go to state 147
-    GE              shift and go to state 148
-    GT              shift and go to state 149
-    EQ              shift and go to state 150
-    NE              shift and go to state 151
+    SEMI            shift and go to state 141
+    PLUS            shift and go to state 142
+    MINUS           shift and go to state 143
+    TIMES           shift and go to state 144
+    DIVIDE          shift and go to state 145
+    MOD             shift and go to state 146
+    LE              shift and go to state 147
+    LT              shift and go to state 148
+    GE              shift and go to state 149
+    GT              shift and go to state 150
+    EQ              shift and go to state 151
+    NE              shift and go to state 152
 
 
 state 125
 
     (112) assignment_statement -> assignment . SEMI
 
-    SEMI            shift and go to state 152
+    SEMI            shift and go to state 153
 
 
 state 126
@@ -1817,6 +1828,7 @@ state 126
     (74) expression -> . expression GT expression
     (75) expression -> . expression EQ expression
     (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
     (77) call_expr -> . call_expr call_suffix
     (78) call_expr -> . primary
     (24) primary -> . IDENT LBRACE field_assign_list RBRACE
@@ -1831,19 +1843,20 @@ state 126
     (102) primary -> . NEW qualified_identifier
     (103) primary -> . FN LPAREN parameters_opt RPAREN return_opt block
 
+    MINUS           shift and go to state 129
     IDENT           shift and go to state 123
-    LPAREN          shift and go to state 130
-    LBRACKET        shift and go to state 131
-    NUMBER          shift and go to state 132
-    STRING          shift and go to state 133
-    TRUE            shift and go to state 134
-    FALSE           shift and go to state 135
-    NEW             shift and go to state 136
-    FN              shift and go to state 137
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
 
-    expression                     shift and go to state 153
-    call_expr                      shift and go to state 154
-    primary                        shift and go to state 129
+    expression                     shift and go to state 154
+    call_expr                      shift and go to state 155
+    primary                        shift and go to state 130
 
 state 127
 
@@ -1860,6 +1873,7 @@ state 127
     (74) expression -> . expression GT expression
     (75) expression -> . expression EQ expression
     (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
     (77) call_expr -> . call_expr call_suffix
     (78) call_expr -> . primary
     (24) primary -> . IDENT LBRACE field_assign_list RBRACE
@@ -1874,19 +1888,20 @@ state 127
     (102) primary -> . NEW qualified_identifier
     (103) primary -> . FN LPAREN parameters_opt RPAREN return_opt block
 
+    MINUS           shift and go to state 129
     IDENT           shift and go to state 123
-    LPAREN          shift and go to state 130
-    LBRACKET        shift and go to state 131
-    NUMBER          shift and go to state 132
-    STRING          shift and go to state 133
-    TRUE            shift and go to state 134
-    FALSE           shift and go to state 135
-    NEW             shift and go to state 136
-    FN              shift and go to state 137
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
 
-    expression                     shift and go to state 155
-    call_expr                      shift and go to state 154
-    primary                        shift and go to state 129
+    expression                     shift and go to state 156
+    call_expr                      shift and go to state 155
+    primary                        shift and go to state 130
 
 state 128
 
@@ -1899,7 +1914,7 @@ state 128
     (82) call_suffix -> . ARROW IDENT
     (83) call_suffix -> . LBRACKET expression RBRACKET
 
-    EQUAL           shift and go to state 156
+    EQUAL           shift and go to state 157
     SEMI            reduce using rule 65 (expression -> call_expr .)
     PLUS            reduce using rule 65 (expression -> call_expr .)
     MINUS           reduce using rule 65 (expression -> call_expr .)
@@ -1912,15 +1927,60 @@ state 128
     GT              reduce using rule 65 (expression -> call_expr .)
     EQ              reduce using rule 65 (expression -> call_expr .)
     NE              reduce using rule 65 (expression -> call_expr .)
-    LPAREN          shift and go to state 158
-    DOT             shift and go to state 159
-    DDCOLON         shift and go to state 160
-    ARROW           shift and go to state 161
-    LBRACKET        shift and go to state 162
+    LPAREN          shift and go to state 159
+    DOT             shift and go to state 160
+    DDCOLON         shift and go to state 161
+    ARROW           shift and go to state 162
+    LBRACKET        shift and go to state 163
 
-    call_suffix                    shift and go to state 157
+    call_suffix                    shift and go to state 158
 
 state 129
+
+    (117) expression -> MINUS . expression
+    (65) expression -> . call_expr
+    (66) expression -> . expression PLUS expression
+    (67) expression -> . expression MINUS expression
+    (68) expression -> . expression TIMES expression
+    (69) expression -> . expression DIVIDE expression
+    (70) expression -> . expression MOD expression
+    (71) expression -> . expression LE expression
+    (72) expression -> . expression LT expression
+    (73) expression -> . expression GE expression
+    (74) expression -> . expression GT expression
+    (75) expression -> . expression EQ expression
+    (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
+    (77) call_expr -> . call_expr call_suffix
+    (78) call_expr -> . primary
+    (24) primary -> . IDENT LBRACE field_assign_list RBRACE
+    (90) primary -> . LPAREN expression RPAREN
+    (91) primary -> . LBRACKET expr_list_opt RBRACKET
+    (96) primary -> . NUMBER
+    (97) primary -> . STRING
+    (98) primary -> . IDENT
+    (99) primary -> . TRUE
+    (100) primary -> . FALSE
+    (101) primary -> . NEW qualified_identifier LPAREN arg_list_opt RPAREN
+    (102) primary -> . NEW qualified_identifier
+    (103) primary -> . FN LPAREN parameters_opt RPAREN return_opt block
+
+    MINUS           shift and go to state 129
+    IDENT           shift and go to state 123
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
+
+    expression                     shift and go to state 164
+    call_expr                      shift and go to state 155
+    primary                        shift and go to state 130
+
+state 130
 
     (78) call_expr -> primary .
 
@@ -1950,7 +2010,7 @@ state 129
     IDENT           reduce using rule 78 (call_expr -> primary .)
 
 
-state 130
+state 131
 
     (90) primary -> LPAREN . expression RPAREN
     (65) expression -> . call_expr
@@ -1965,6 +2025,7 @@ state 130
     (74) expression -> . expression GT expression
     (75) expression -> . expression EQ expression
     (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
     (77) call_expr -> . call_expr call_suffix
     (78) call_expr -> . primary
     (24) primary -> . IDENT LBRACE field_assign_list RBRACE
@@ -1979,21 +2040,22 @@ state 130
     (102) primary -> . NEW qualified_identifier
     (103) primary -> . FN LPAREN parameters_opt RPAREN return_opt block
 
+    MINUS           shift and go to state 129
     IDENT           shift and go to state 123
-    LPAREN          shift and go to state 130
-    LBRACKET        shift and go to state 131
-    NUMBER          shift and go to state 132
-    STRING          shift and go to state 133
-    TRUE            shift and go to state 134
-    FALSE           shift and go to state 135
-    NEW             shift and go to state 136
-    FN              shift and go to state 137
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
 
-    expression                     shift and go to state 163
-    call_expr                      shift and go to state 154
-    primary                        shift and go to state 129
+    expression                     shift and go to state 165
+    call_expr                      shift and go to state 155
+    primary                        shift and go to state 130
 
-state 131
+state 132
 
     (91) primary -> LBRACKET . expr_list_opt RBRACKET
     (92) expr_list_opt -> . expr_list
@@ -2013,6 +2075,7 @@ state 131
     (74) expression -> . expression GT expression
     (75) expression -> . expression EQ expression
     (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
     (77) call_expr -> . call_expr call_suffix
     (78) call_expr -> . primary
     (24) primary -> . IDENT LBRACE field_assign_list RBRACE
@@ -2028,24 +2091,25 @@ state 131
     (103) primary -> . FN LPAREN parameters_opt RPAREN return_opt block
 
     RBRACKET        reduce using rule 104 (empty -> .)
+    MINUS           shift and go to state 129
     IDENT           shift and go to state 123
-    LPAREN          shift and go to state 130
-    LBRACKET        shift and go to state 131
-    NUMBER          shift and go to state 132
-    STRING          shift and go to state 133
-    TRUE            shift and go to state 134
-    FALSE           shift and go to state 135
-    NEW             shift and go to state 136
-    FN              shift and go to state 137
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
 
-    expr_list_opt                  shift and go to state 164
-    expr_list                      shift and go to state 165
-    empty                          shift and go to state 166
-    expression                     shift and go to state 167
-    call_expr                      shift and go to state 154
-    primary                        shift and go to state 129
+    expr_list_opt                  shift and go to state 166
+    expr_list                      shift and go to state 167
+    empty                          shift and go to state 168
+    expression                     shift and go to state 169
+    call_expr                      shift and go to state 155
+    primary                        shift and go to state 130
 
-state 132
+state 133
 
     (96) primary -> NUMBER .
 
@@ -2075,7 +2139,7 @@ state 132
     IDENT           reduce using rule 96 (primary -> NUMBER .)
 
 
-state 133
+state 134
 
     (97) primary -> STRING .
 
@@ -2105,7 +2169,7 @@ state 133
     IDENT           reduce using rule 97 (primary -> STRING .)
 
 
-state 134
+state 135
 
     (99) primary -> TRUE .
 
@@ -2135,7 +2199,7 @@ state 134
     IDENT           reduce using rule 99 (primary -> TRUE .)
 
 
-state 135
+state 136
 
     (100) primary -> FALSE .
 
@@ -2165,33 +2229,33 @@ state 135
     IDENT           reduce using rule 100 (primary -> FALSE .)
 
 
-state 136
+state 137
 
     (101) primary -> NEW . qualified_identifier LPAREN arg_list_opt RPAREN
     (102) primary -> NEW . qualified_identifier
     (115) qualified_identifier -> . IDENT DDCOLON IDENT
     (116) qualified_identifier -> . IDENT
 
-    IDENT           shift and go to state 169
+    IDENT           shift and go to state 171
 
-    qualified_identifier           shift and go to state 168
+    qualified_identifier           shift and go to state 170
 
-state 137
+state 138
 
     (103) primary -> FN . LPAREN parameters_opt RPAREN return_opt block
 
-    LPAREN          shift and go to state 170
+    LPAREN          shift and go to state 172
 
 
-state 138
+state 139
 
     (61) var_decl -> LET IDENT . COLON type_expr EQUAL expression SEMI
     (62) var_decl -> LET IDENT . COLON type_expr SEMI
 
-    COLON           shift and go to state 171
+    COLON           shift and go to state 173
 
 
-state 139
+state 140
 
     (24) primary -> IDENT LBRACE . field_assign_list RBRACE
     (25) field_assign_list -> . field_assign_list field_assign
@@ -2201,16 +2265,16 @@ state 139
     (104) empty -> .
 
   ! shift/reduce conflict for IDENT resolved as shift
-    IDENT           shift and go to state 172
+    IDENT           shift and go to state 174
     RBRACE          reduce using rule 104 (empty -> .)
 
   ! IDENT           [ reduce using rule 104 (empty -> .) ]
 
-    field_assign_list              shift and go to state 173
-    field_assign                   shift and go to state 174
-    empty                          shift and go to state 175
+    field_assign_list              shift and go to state 175
+    field_assign                   shift and go to state 176
+    empty                          shift and go to state 177
 
-state 140
+state 141
 
     (64) expr_statement -> expression SEMI .
 
@@ -2218,6 +2282,7 @@ state 140
     LET             reduce using rule 64 (expr_statement -> expression SEMI .)
     RETURN          reduce using rule 64 (expr_statement -> expression SEMI .)
     IF              reduce using rule 64 (expr_statement -> expression SEMI .)
+    MINUS           reduce using rule 64 (expr_statement -> expression SEMI .)
     IDENT           reduce using rule 64 (expr_statement -> expression SEMI .)
     LPAREN          reduce using rule 64 (expr_statement -> expression SEMI .)
     LBRACKET        reduce using rule 64 (expr_statement -> expression SEMI .)
@@ -2229,7 +2294,7 @@ state 140
     FN              reduce using rule 64 (expr_statement -> expression SEMI .)
 
 
-state 141
+state 142
 
     (66) expression -> expression PLUS . expression
     (65) expression -> . call_expr
@@ -2244,6 +2309,7 @@ state 141
     (74) expression -> . expression GT expression
     (75) expression -> . expression EQ expression
     (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
     (77) call_expr -> . call_expr call_suffix
     (78) call_expr -> . primary
     (24) primary -> . IDENT LBRACE field_assign_list RBRACE
@@ -2258,21 +2324,22 @@ state 141
     (102) primary -> . NEW qualified_identifier
     (103) primary -> . FN LPAREN parameters_opt RPAREN return_opt block
 
+    MINUS           shift and go to state 129
     IDENT           shift and go to state 123
-    LPAREN          shift and go to state 130
-    LBRACKET        shift and go to state 131
-    NUMBER          shift and go to state 132
-    STRING          shift and go to state 133
-    TRUE            shift and go to state 134
-    FALSE           shift and go to state 135
-    NEW             shift and go to state 136
-    FN              shift and go to state 137
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
 
-    expression                     shift and go to state 176
-    call_expr                      shift and go to state 154
-    primary                        shift and go to state 129
+    expression                     shift and go to state 178
+    call_expr                      shift and go to state 155
+    primary                        shift and go to state 130
 
-state 142
+state 143
 
     (67) expression -> expression MINUS . expression
     (65) expression -> . call_expr
@@ -2287,6 +2354,7 @@ state 142
     (74) expression -> . expression GT expression
     (75) expression -> . expression EQ expression
     (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
     (77) call_expr -> . call_expr call_suffix
     (78) call_expr -> . primary
     (24) primary -> . IDENT LBRACE field_assign_list RBRACE
@@ -2301,21 +2369,22 @@ state 142
     (102) primary -> . NEW qualified_identifier
     (103) primary -> . FN LPAREN parameters_opt RPAREN return_opt block
 
+    MINUS           shift and go to state 129
     IDENT           shift and go to state 123
-    LPAREN          shift and go to state 130
-    LBRACKET        shift and go to state 131
-    NUMBER          shift and go to state 132
-    STRING          shift and go to state 133
-    TRUE            shift and go to state 134
-    FALSE           shift and go to state 135
-    NEW             shift and go to state 136
-    FN              shift and go to state 137
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
 
-    expression                     shift and go to state 177
-    call_expr                      shift and go to state 154
-    primary                        shift and go to state 129
+    expression                     shift and go to state 179
+    call_expr                      shift and go to state 155
+    primary                        shift and go to state 130
 
-state 143
+state 144
 
     (68) expression -> expression TIMES . expression
     (65) expression -> . call_expr
@@ -2330,6 +2399,7 @@ state 143
     (74) expression -> . expression GT expression
     (75) expression -> . expression EQ expression
     (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
     (77) call_expr -> . call_expr call_suffix
     (78) call_expr -> . primary
     (24) primary -> . IDENT LBRACE field_assign_list RBRACE
@@ -2344,21 +2414,22 @@ state 143
     (102) primary -> . NEW qualified_identifier
     (103) primary -> . FN LPAREN parameters_opt RPAREN return_opt block
 
+    MINUS           shift and go to state 129
     IDENT           shift and go to state 123
-    LPAREN          shift and go to state 130
-    LBRACKET        shift and go to state 131
-    NUMBER          shift and go to state 132
-    STRING          shift and go to state 133
-    TRUE            shift and go to state 134
-    FALSE           shift and go to state 135
-    NEW             shift and go to state 136
-    FN              shift and go to state 137
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
 
-    expression                     shift and go to state 178
-    call_expr                      shift and go to state 154
-    primary                        shift and go to state 129
+    expression                     shift and go to state 180
+    call_expr                      shift and go to state 155
+    primary                        shift and go to state 130
 
-state 144
+state 145
 
     (69) expression -> expression DIVIDE . expression
     (65) expression -> . call_expr
@@ -2373,6 +2444,7 @@ state 144
     (74) expression -> . expression GT expression
     (75) expression -> . expression EQ expression
     (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
     (77) call_expr -> . call_expr call_suffix
     (78) call_expr -> . primary
     (24) primary -> . IDENT LBRACE field_assign_list RBRACE
@@ -2387,21 +2459,22 @@ state 144
     (102) primary -> . NEW qualified_identifier
     (103) primary -> . FN LPAREN parameters_opt RPAREN return_opt block
 
+    MINUS           shift and go to state 129
     IDENT           shift and go to state 123
-    LPAREN          shift and go to state 130
-    LBRACKET        shift and go to state 131
-    NUMBER          shift and go to state 132
-    STRING          shift and go to state 133
-    TRUE            shift and go to state 134
-    FALSE           shift and go to state 135
-    NEW             shift and go to state 136
-    FN              shift and go to state 137
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
 
-    expression                     shift and go to state 179
-    call_expr                      shift and go to state 154
-    primary                        shift and go to state 129
+    expression                     shift and go to state 181
+    call_expr                      shift and go to state 155
+    primary                        shift and go to state 130
 
-state 145
+state 146
 
     (70) expression -> expression MOD . expression
     (65) expression -> . call_expr
@@ -2416,6 +2489,7 @@ state 145
     (74) expression -> . expression GT expression
     (75) expression -> . expression EQ expression
     (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
     (77) call_expr -> . call_expr call_suffix
     (78) call_expr -> . primary
     (24) primary -> . IDENT LBRACE field_assign_list RBRACE
@@ -2430,21 +2504,22 @@ state 145
     (102) primary -> . NEW qualified_identifier
     (103) primary -> . FN LPAREN parameters_opt RPAREN return_opt block
 
+    MINUS           shift and go to state 129
     IDENT           shift and go to state 123
-    LPAREN          shift and go to state 130
-    LBRACKET        shift and go to state 131
-    NUMBER          shift and go to state 132
-    STRING          shift and go to state 133
-    TRUE            shift and go to state 134
-    FALSE           shift and go to state 135
-    NEW             shift and go to state 136
-    FN              shift and go to state 137
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
 
-    expression                     shift and go to state 180
-    call_expr                      shift and go to state 154
-    primary                        shift and go to state 129
+    expression                     shift and go to state 182
+    call_expr                      shift and go to state 155
+    primary                        shift and go to state 130
 
-state 146
+state 147
 
     (71) expression -> expression LE . expression
     (65) expression -> . call_expr
@@ -2459,6 +2534,7 @@ state 146
     (74) expression -> . expression GT expression
     (75) expression -> . expression EQ expression
     (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
     (77) call_expr -> . call_expr call_suffix
     (78) call_expr -> . primary
     (24) primary -> . IDENT LBRACE field_assign_list RBRACE
@@ -2473,21 +2549,22 @@ state 146
     (102) primary -> . NEW qualified_identifier
     (103) primary -> . FN LPAREN parameters_opt RPAREN return_opt block
 
+    MINUS           shift and go to state 129
     IDENT           shift and go to state 123
-    LPAREN          shift and go to state 130
-    LBRACKET        shift and go to state 131
-    NUMBER          shift and go to state 132
-    STRING          shift and go to state 133
-    TRUE            shift and go to state 134
-    FALSE           shift and go to state 135
-    NEW             shift and go to state 136
-    FN              shift and go to state 137
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
 
-    expression                     shift and go to state 181
-    call_expr                      shift and go to state 154
-    primary                        shift and go to state 129
+    expression                     shift and go to state 183
+    call_expr                      shift and go to state 155
+    primary                        shift and go to state 130
 
-state 147
+state 148
 
     (72) expression -> expression LT . expression
     (65) expression -> . call_expr
@@ -2502,6 +2579,7 @@ state 147
     (74) expression -> . expression GT expression
     (75) expression -> . expression EQ expression
     (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
     (77) call_expr -> . call_expr call_suffix
     (78) call_expr -> . primary
     (24) primary -> . IDENT LBRACE field_assign_list RBRACE
@@ -2516,21 +2594,22 @@ state 147
     (102) primary -> . NEW qualified_identifier
     (103) primary -> . FN LPAREN parameters_opt RPAREN return_opt block
 
+    MINUS           shift and go to state 129
     IDENT           shift and go to state 123
-    LPAREN          shift and go to state 130
-    LBRACKET        shift and go to state 131
-    NUMBER          shift and go to state 132
-    STRING          shift and go to state 133
-    TRUE            shift and go to state 134
-    FALSE           shift and go to state 135
-    NEW             shift and go to state 136
-    FN              shift and go to state 137
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
 
-    expression                     shift and go to state 182
-    call_expr                      shift and go to state 154
-    primary                        shift and go to state 129
+    expression                     shift and go to state 184
+    call_expr                      shift and go to state 155
+    primary                        shift and go to state 130
 
-state 148
+state 149
 
     (73) expression -> expression GE . expression
     (65) expression -> . call_expr
@@ -2545,6 +2624,7 @@ state 148
     (74) expression -> . expression GT expression
     (75) expression -> . expression EQ expression
     (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
     (77) call_expr -> . call_expr call_suffix
     (78) call_expr -> . primary
     (24) primary -> . IDENT LBRACE field_assign_list RBRACE
@@ -2559,21 +2639,22 @@ state 148
     (102) primary -> . NEW qualified_identifier
     (103) primary -> . FN LPAREN parameters_opt RPAREN return_opt block
 
+    MINUS           shift and go to state 129
     IDENT           shift and go to state 123
-    LPAREN          shift and go to state 130
-    LBRACKET        shift and go to state 131
-    NUMBER          shift and go to state 132
-    STRING          shift and go to state 133
-    TRUE            shift and go to state 134
-    FALSE           shift and go to state 135
-    NEW             shift and go to state 136
-    FN              shift and go to state 137
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
 
-    expression                     shift and go to state 183
-    call_expr                      shift and go to state 154
-    primary                        shift and go to state 129
+    expression                     shift and go to state 185
+    call_expr                      shift and go to state 155
+    primary                        shift and go to state 130
 
-state 149
+state 150
 
     (74) expression -> expression GT . expression
     (65) expression -> . call_expr
@@ -2588,6 +2669,7 @@ state 149
     (74) expression -> . expression GT expression
     (75) expression -> . expression EQ expression
     (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
     (77) call_expr -> . call_expr call_suffix
     (78) call_expr -> . primary
     (24) primary -> . IDENT LBRACE field_assign_list RBRACE
@@ -2602,21 +2684,22 @@ state 149
     (102) primary -> . NEW qualified_identifier
     (103) primary -> . FN LPAREN parameters_opt RPAREN return_opt block
 
+    MINUS           shift and go to state 129
     IDENT           shift and go to state 123
-    LPAREN          shift and go to state 130
-    LBRACKET        shift and go to state 131
-    NUMBER          shift and go to state 132
-    STRING          shift and go to state 133
-    TRUE            shift and go to state 134
-    FALSE           shift and go to state 135
-    NEW             shift and go to state 136
-    FN              shift and go to state 137
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
 
-    expression                     shift and go to state 184
-    call_expr                      shift and go to state 154
-    primary                        shift and go to state 129
+    expression                     shift and go to state 186
+    call_expr                      shift and go to state 155
+    primary                        shift and go to state 130
 
-state 150
+state 151
 
     (75) expression -> expression EQ . expression
     (65) expression -> . call_expr
@@ -2631,6 +2714,7 @@ state 150
     (74) expression -> . expression GT expression
     (75) expression -> . expression EQ expression
     (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
     (77) call_expr -> . call_expr call_suffix
     (78) call_expr -> . primary
     (24) primary -> . IDENT LBRACE field_assign_list RBRACE
@@ -2645,21 +2729,22 @@ state 150
     (102) primary -> . NEW qualified_identifier
     (103) primary -> . FN LPAREN parameters_opt RPAREN return_opt block
 
+    MINUS           shift and go to state 129
     IDENT           shift and go to state 123
-    LPAREN          shift and go to state 130
-    LBRACKET        shift and go to state 131
-    NUMBER          shift and go to state 132
-    STRING          shift and go to state 133
-    TRUE            shift and go to state 134
-    FALSE           shift and go to state 135
-    NEW             shift and go to state 136
-    FN              shift and go to state 137
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
 
-    expression                     shift and go to state 185
-    call_expr                      shift and go to state 154
-    primary                        shift and go to state 129
+    expression                     shift and go to state 187
+    call_expr                      shift and go to state 155
+    primary                        shift and go to state 130
 
-state 151
+state 152
 
     (76) expression -> expression NE . expression
     (65) expression -> . call_expr
@@ -2674,6 +2759,7 @@ state 151
     (74) expression -> . expression GT expression
     (75) expression -> . expression EQ expression
     (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
     (77) call_expr -> . call_expr call_suffix
     (78) call_expr -> . primary
     (24) primary -> . IDENT LBRACE field_assign_list RBRACE
@@ -2688,21 +2774,22 @@ state 151
     (102) primary -> . NEW qualified_identifier
     (103) primary -> . FN LPAREN parameters_opt RPAREN return_opt block
 
+    MINUS           shift and go to state 129
     IDENT           shift and go to state 123
-    LPAREN          shift and go to state 130
-    LBRACKET        shift and go to state 131
-    NUMBER          shift and go to state 132
-    STRING          shift and go to state 133
-    TRUE            shift and go to state 134
-    FALSE           shift and go to state 135
-    NEW             shift and go to state 136
-    FN              shift and go to state 137
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
 
-    expression                     shift and go to state 186
-    call_expr                      shift and go to state 154
-    primary                        shift and go to state 129
+    expression                     shift and go to state 188
+    call_expr                      shift and go to state 155
+    primary                        shift and go to state 130
 
-state 152
+state 153
 
     (112) assignment_statement -> assignment SEMI .
 
@@ -2710,6 +2797,7 @@ state 152
     LET             reduce using rule 112 (assignment_statement -> assignment SEMI .)
     RETURN          reduce using rule 112 (assignment_statement -> assignment SEMI .)
     IF              reduce using rule 112 (assignment_statement -> assignment SEMI .)
+    MINUS           reduce using rule 112 (assignment_statement -> assignment SEMI .)
     IDENT           reduce using rule 112 (assignment_statement -> assignment SEMI .)
     LPAREN          reduce using rule 112 (assignment_statement -> assignment SEMI .)
     LBRACKET        reduce using rule 112 (assignment_statement -> assignment SEMI .)
@@ -2721,7 +2809,7 @@ state 152
     FN              reduce using rule 112 (assignment_statement -> assignment SEMI .)
 
 
-state 153
+state 154
 
     (63) return_statement -> RETURN expression . SEMI
     (66) expression -> expression . PLUS expression
@@ -2736,21 +2824,21 @@ state 153
     (75) expression -> expression . EQ expression
     (76) expression -> expression . NE expression
 
-    SEMI            shift and go to state 187
-    PLUS            shift and go to state 141
-    MINUS           shift and go to state 142
-    TIMES           shift and go to state 143
-    DIVIDE          shift and go to state 144
-    MOD             shift and go to state 145
-    LE              shift and go to state 146
-    LT              shift and go to state 147
-    GE              shift and go to state 148
-    GT              shift and go to state 149
-    EQ              shift and go to state 150
-    NE              shift and go to state 151
+    SEMI            shift and go to state 189
+    PLUS            shift and go to state 142
+    MINUS           shift and go to state 143
+    TIMES           shift and go to state 144
+    DIVIDE          shift and go to state 145
+    MOD             shift and go to state 146
+    LE              shift and go to state 147
+    LT              shift and go to state 148
+    GE              shift and go to state 149
+    GT              shift and go to state 150
+    EQ              shift and go to state 151
+    NE              shift and go to state 152
 
 
-state 154
+state 155
 
     (65) expression -> call_expr .
     (77) call_expr -> call_expr . call_suffix
@@ -2778,15 +2866,15 @@ state 154
     RBRACKET        reduce using rule 65 (expression -> call_expr .)
     RBRACE          reduce using rule 65 (expression -> call_expr .)
     IDENT           reduce using rule 65 (expression -> call_expr .)
-    LPAREN          shift and go to state 158
-    DOT             shift and go to state 159
-    DDCOLON         shift and go to state 160
-    ARROW           shift and go to state 161
-    LBRACKET        shift and go to state 162
+    LPAREN          shift and go to state 159
+    DOT             shift and go to state 160
+    DDCOLON         shift and go to state 161
+    ARROW           shift and go to state 162
+    LBRACKET        shift and go to state 163
 
-    call_suffix                    shift and go to state 157
+    call_suffix                    shift and go to state 158
 
-state 155
+state 156
 
     (105) if_statement -> IF expression . block else_clause_opt
     (66) expression -> expression . PLUS expression
@@ -2802,22 +2890,22 @@ state 155
     (76) expression -> expression . NE expression
     (53) block -> . LBRACE statement_list RBRACE
 
-    PLUS            shift and go to state 141
-    MINUS           shift and go to state 142
-    TIMES           shift and go to state 143
-    DIVIDE          shift and go to state 144
-    MOD             shift and go to state 145
-    LE              shift and go to state 146
-    LT              shift and go to state 147
-    GE              shift and go to state 148
-    GT              shift and go to state 149
-    EQ              shift and go to state 150
-    NE              shift and go to state 151
+    PLUS            shift and go to state 142
+    MINUS           shift and go to state 143
+    TIMES           shift and go to state 144
+    DIVIDE          shift and go to state 145
+    MOD             shift and go to state 146
+    LE              shift and go to state 147
+    LT              shift and go to state 148
+    GE              shift and go to state 149
+    GT              shift and go to state 150
+    EQ              shift and go to state 151
+    NE              shift and go to state 152
     LBRACE          shift and go to state 103
 
-    block                          shift and go to state 188
+    block                          shift and go to state 190
 
-state 156
+state 157
 
     (113) assignment -> call_expr EQUAL . expression
     (65) expression -> . call_expr
@@ -2832,6 +2920,7 @@ state 156
     (74) expression -> . expression GT expression
     (75) expression -> . expression EQ expression
     (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
     (77) call_expr -> . call_expr call_suffix
     (78) call_expr -> . primary
     (24) primary -> . IDENT LBRACE field_assign_list RBRACE
@@ -2846,21 +2935,22 @@ state 156
     (102) primary -> . NEW qualified_identifier
     (103) primary -> . FN LPAREN parameters_opt RPAREN return_opt block
 
+    MINUS           shift and go to state 129
     IDENT           shift and go to state 123
-    LPAREN          shift and go to state 130
-    LBRACKET        shift and go to state 131
-    NUMBER          shift and go to state 132
-    STRING          shift and go to state 133
-    TRUE            shift and go to state 134
-    FALSE           shift and go to state 135
-    NEW             shift and go to state 136
-    FN              shift and go to state 137
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
 
-    call_expr                      shift and go to state 154
-    expression                     shift and go to state 189
-    primary                        shift and go to state 129
+    call_expr                      shift and go to state 155
+    expression                     shift and go to state 191
+    primary                        shift and go to state 130
 
-state 157
+state 158
 
     (77) call_expr -> call_expr call_suffix .
 
@@ -2890,7 +2980,7 @@ state 157
     IDENT           reduce using rule 77 (call_expr -> call_expr call_suffix .)
 
 
-state 158
+state 159
 
     (79) call_suffix -> LPAREN . arg_list_opt RPAREN
     (84) arg_list_opt -> . arg_list
@@ -2912,6 +3002,7 @@ state 158
     (74) expression -> . expression GT expression
     (75) expression -> . expression EQ expression
     (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
     (77) call_expr -> . call_expr call_suffix
     (78) call_expr -> . primary
     (24) primary -> . IDENT LBRACE field_assign_list RBRACE
@@ -2927,46 +3018,47 @@ state 158
     (103) primary -> . FN LPAREN parameters_opt RPAREN return_opt block
 
     RPAREN          reduce using rule 104 (empty -> .)
-    IDENT           shift and go to state 194
-    LPAREN          shift and go to state 130
-    LBRACKET        shift and go to state 131
-    NUMBER          shift and go to state 132
-    STRING          shift and go to state 133
-    TRUE            shift and go to state 134
-    FALSE           shift and go to state 135
-    NEW             shift and go to state 136
-    FN              shift and go to state 137
-
-    arg_list_opt                   shift and go to state 190
-    arg_list                       shift and go to state 191
-    empty                          shift and go to state 192
-    argument                       shift and go to state 193
-    expression                     shift and go to state 195
-    call_expr                      shift and go to state 154
-    primary                        shift and go to state 129
-
-state 159
-
-    (80) call_suffix -> DOT . IDENT
-
     IDENT           shift and go to state 196
+    MINUS           shift and go to state 129
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
 
+    arg_list_opt                   shift and go to state 192
+    arg_list                       shift and go to state 193
+    empty                          shift and go to state 194
+    argument                       shift and go to state 195
+    expression                     shift and go to state 197
+    call_expr                      shift and go to state 155
+    primary                        shift and go to state 130
 
 state 160
 
-    (81) call_suffix -> DDCOLON . IDENT
-
-    IDENT           shift and go to state 197
-
-
-state 161
-
-    (82) call_suffix -> ARROW . IDENT
+    (80) call_suffix -> DOT . IDENT
 
     IDENT           shift and go to state 198
 
 
+state 161
+
+    (81) call_suffix -> DDCOLON . IDENT
+
+    IDENT           shift and go to state 199
+
+
 state 162
+
+    (82) call_suffix -> ARROW . IDENT
+
+    IDENT           shift and go to state 200
+
+
+state 163
 
     (83) call_suffix -> LBRACKET . expression RBRACKET
     (65) expression -> . call_expr
@@ -2981,6 +3073,7 @@ state 162
     (74) expression -> . expression GT expression
     (75) expression -> . expression EQ expression
     (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
     (77) call_expr -> . call_expr call_suffix
     (78) call_expr -> . primary
     (24) primary -> . IDENT LBRACE field_assign_list RBRACE
@@ -2995,21 +3088,69 @@ state 162
     (102) primary -> . NEW qualified_identifier
     (103) primary -> . FN LPAREN parameters_opt RPAREN return_opt block
 
+    MINUS           shift and go to state 129
     IDENT           shift and go to state 123
-    LPAREN          shift and go to state 130
-    LBRACKET        shift and go to state 131
-    NUMBER          shift and go to state 132
-    STRING          shift and go to state 133
-    TRUE            shift and go to state 134
-    FALSE           shift and go to state 135
-    NEW             shift and go to state 136
-    FN              shift and go to state 137
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
 
-    expression                     shift and go to state 199
-    call_expr                      shift and go to state 154
-    primary                        shift and go to state 129
+    expression                     shift and go to state 201
+    call_expr                      shift and go to state 155
+    primary                        shift and go to state 130
 
-state 163
+state 164
+
+    (117) expression -> MINUS expression .
+    (66) expression -> expression . PLUS expression
+    (67) expression -> expression . MINUS expression
+    (68) expression -> expression . TIMES expression
+    (69) expression -> expression . DIVIDE expression
+    (70) expression -> expression . MOD expression
+    (71) expression -> expression . LE expression
+    (72) expression -> expression . LT expression
+    (73) expression -> expression . GE expression
+    (74) expression -> expression . GT expression
+    (75) expression -> expression . EQ expression
+    (76) expression -> expression . NE expression
+
+    SEMI            reduce using rule 117 (expression -> MINUS expression .)
+    LBRACE          reduce using rule 117 (expression -> MINUS expression .)
+    RPAREN          reduce using rule 117 (expression -> MINUS expression .)
+    COMMA           reduce using rule 117 (expression -> MINUS expression .)
+    RBRACKET        reduce using rule 117 (expression -> MINUS expression .)
+    RBRACE          reduce using rule 117 (expression -> MINUS expression .)
+    IDENT           reduce using rule 117 (expression -> MINUS expression .)
+    PLUS            shift and go to state 142
+    MINUS           shift and go to state 143
+    TIMES           shift and go to state 144
+    DIVIDE          shift and go to state 145
+    MOD             shift and go to state 146
+    LE              shift and go to state 147
+    LT              shift and go to state 148
+    GE              shift and go to state 149
+    GT              shift and go to state 150
+    EQ              shift and go to state 151
+    NE              shift and go to state 152
+
+  ! PLUS            [ reduce using rule 117 (expression -> MINUS expression .) ]
+  ! MINUS           [ reduce using rule 117 (expression -> MINUS expression .) ]
+  ! TIMES           [ reduce using rule 117 (expression -> MINUS expression .) ]
+  ! DIVIDE          [ reduce using rule 117 (expression -> MINUS expression .) ]
+  ! MOD             [ reduce using rule 117 (expression -> MINUS expression .) ]
+  ! LE              [ reduce using rule 117 (expression -> MINUS expression .) ]
+  ! LT              [ reduce using rule 117 (expression -> MINUS expression .) ]
+  ! GE              [ reduce using rule 117 (expression -> MINUS expression .) ]
+  ! GT              [ reduce using rule 117 (expression -> MINUS expression .) ]
+  ! EQ              [ reduce using rule 117 (expression -> MINUS expression .) ]
+  ! NE              [ reduce using rule 117 (expression -> MINUS expression .) ]
+
+
+state 165
 
     (90) primary -> LPAREN expression . RPAREN
     (66) expression -> expression . PLUS expression
@@ -3024,44 +3165,44 @@ state 163
     (75) expression -> expression . EQ expression
     (76) expression -> expression . NE expression
 
-    RPAREN          shift and go to state 200
-    PLUS            shift and go to state 141
-    MINUS           shift and go to state 142
-    TIMES           shift and go to state 143
-    DIVIDE          shift and go to state 144
-    MOD             shift and go to state 145
-    LE              shift and go to state 146
-    LT              shift and go to state 147
-    GE              shift and go to state 148
-    GT              shift and go to state 149
-    EQ              shift and go to state 150
-    NE              shift and go to state 151
+    RPAREN          shift and go to state 202
+    PLUS            shift and go to state 142
+    MINUS           shift and go to state 143
+    TIMES           shift and go to state 144
+    DIVIDE          shift and go to state 145
+    MOD             shift and go to state 146
+    LE              shift and go to state 147
+    LT              shift and go to state 148
+    GE              shift and go to state 149
+    GT              shift and go to state 150
+    EQ              shift and go to state 151
+    NE              shift and go to state 152
 
 
-state 164
+state 166
 
     (91) primary -> LBRACKET expr_list_opt . RBRACKET
 
-    RBRACKET        shift and go to state 201
+    RBRACKET        shift and go to state 203
 
 
-state 165
+state 167
 
     (92) expr_list_opt -> expr_list .
     (94) expr_list -> expr_list . COMMA expression
 
     RBRACKET        reduce using rule 92 (expr_list_opt -> expr_list .)
-    COMMA           shift and go to state 202
+    COMMA           shift and go to state 204
 
 
-state 166
+state 168
 
     (93) expr_list_opt -> empty .
 
     RBRACKET        reduce using rule 93 (expr_list_opt -> empty .)
 
 
-state 167
+state 169
 
     (95) expr_list -> expression .
     (66) expression -> expression . PLUS expression
@@ -3078,26 +3219,26 @@ state 167
 
     COMMA           reduce using rule 95 (expr_list -> expression .)
     RBRACKET        reduce using rule 95 (expr_list -> expression .)
-    PLUS            shift and go to state 141
-    MINUS           shift and go to state 142
-    TIMES           shift and go to state 143
-    DIVIDE          shift and go to state 144
-    MOD             shift and go to state 145
-    LE              shift and go to state 146
-    LT              shift and go to state 147
-    GE              shift and go to state 148
-    GT              shift and go to state 149
-    EQ              shift and go to state 150
-    NE              shift and go to state 151
+    PLUS            shift and go to state 142
+    MINUS           shift and go to state 143
+    TIMES           shift and go to state 144
+    DIVIDE          shift and go to state 145
+    MOD             shift and go to state 146
+    LE              shift and go to state 147
+    LT              shift and go to state 148
+    GE              shift and go to state 149
+    GT              shift and go to state 150
+    EQ              shift and go to state 151
+    NE              shift and go to state 152
 
 
-state 168
+state 170
 
     (101) primary -> NEW qualified_identifier . LPAREN arg_list_opt RPAREN
     (102) primary -> NEW qualified_identifier .
 
   ! shift/reduce conflict for LPAREN resolved as shift
-    LPAREN          shift and go to state 203
+    LPAREN          shift and go to state 205
     EQUAL           reduce using rule 102 (primary -> NEW qualified_identifier .)
     DOT             reduce using rule 102 (primary -> NEW qualified_identifier .)
     DDCOLON         reduce using rule 102 (primary -> NEW qualified_identifier .)
@@ -3125,13 +3266,13 @@ state 168
   ! LPAREN          [ reduce using rule 102 (primary -> NEW qualified_identifier .) ]
 
 
-state 169
+state 171
 
     (115) qualified_identifier -> IDENT . DDCOLON IDENT
     (116) qualified_identifier -> IDENT .
 
   ! shift/reduce conflict for DDCOLON resolved as shift
-    DDCOLON         shift and go to state 204
+    DDCOLON         shift and go to state 206
     LPAREN          reduce using rule 116 (qualified_identifier -> IDENT .)
     EQUAL           reduce using rule 116 (qualified_identifier -> IDENT .)
     DOT             reduce using rule 116 (qualified_identifier -> IDENT .)
@@ -3159,7 +3300,7 @@ state 169
   ! DDCOLON         [ reduce using rule 116 (qualified_identifier -> IDENT .) ]
 
 
-state 170
+state 172
 
     (103) primary -> FN LPAREN . parameters_opt RPAREN return_opt block
     (38) parameters_opt -> . parameters
@@ -3172,12 +3313,12 @@ state 170
     RPAREN          reduce using rule 104 (empty -> .)
     IDENT           shift and go to state 53
 
-    parameters_opt                 shift and go to state 205
+    parameters_opt                 shift and go to state 207
     parameters                     shift and go to state 55
     empty                          shift and go to state 56
     parameter                      shift and go to state 57
 
-state 171
+state 173
 
     (61) var_decl -> LET IDENT COLON . type_expr EQUAL expression SEMI
     (62) var_decl -> LET IDENT COLON . type_expr SEMI
@@ -3186,28 +3327,28 @@ state 171
 
     IDENT           shift and go to state 74
 
-    type_expr                      shift and go to state 206
+    type_expr                      shift and go to state 208
     simple_type_expr               shift and go to state 76
 
-state 172
+state 174
 
     (28) field_assign -> IDENT . COLON expression opt_comma
 
-    COLON           shift and go to state 207
+    COLON           shift and go to state 209
 
 
-state 173
+state 175
 
     (24) primary -> IDENT LBRACE field_assign_list . RBRACE
     (25) field_assign_list -> field_assign_list . field_assign
     (28) field_assign -> . IDENT COLON expression opt_comma
 
-    RBRACE          shift and go to state 208
-    IDENT           shift and go to state 172
+    RBRACE          shift and go to state 210
+    IDENT           shift and go to state 174
 
-    field_assign                   shift and go to state 209
+    field_assign                   shift and go to state 211
 
-state 174
+state 176
 
     (26) field_assign_list -> field_assign .
 
@@ -3215,7 +3356,7 @@ state 174
     IDENT           reduce using rule 26 (field_assign_list -> field_assign .)
 
 
-state 175
+state 177
 
     (27) field_assign_list -> empty .
 
@@ -3223,7 +3364,7 @@ state 175
     IDENT           reduce using rule 27 (field_assign_list -> empty .)
 
 
-state 176
+state 178
 
     (66) expression -> expression PLUS expression .
     (66) expression -> expression . PLUS expression
@@ -3253,24 +3394,24 @@ state 176
     RBRACKET        reduce using rule 66 (expression -> expression PLUS expression .)
     RBRACE          reduce using rule 66 (expression -> expression PLUS expression .)
     IDENT           reduce using rule 66 (expression -> expression PLUS expression .)
-    TIMES           shift and go to state 143
-    DIVIDE          shift and go to state 144
-    MOD             shift and go to state 145
+    TIMES           shift and go to state 144
+    DIVIDE          shift and go to state 145
+    MOD             shift and go to state 146
 
   ! TIMES           [ reduce using rule 66 (expression -> expression PLUS expression .) ]
   ! DIVIDE          [ reduce using rule 66 (expression -> expression PLUS expression .) ]
   ! MOD             [ reduce using rule 66 (expression -> expression PLUS expression .) ]
-  ! PLUS            [ shift and go to state 141 ]
-  ! MINUS           [ shift and go to state 142 ]
-  ! LE              [ shift and go to state 146 ]
-  ! LT              [ shift and go to state 147 ]
-  ! GE              [ shift and go to state 148 ]
-  ! GT              [ shift and go to state 149 ]
-  ! EQ              [ shift and go to state 150 ]
-  ! NE              [ shift and go to state 151 ]
+  ! PLUS            [ shift and go to state 142 ]
+  ! MINUS           [ shift and go to state 143 ]
+  ! LE              [ shift and go to state 147 ]
+  ! LT              [ shift and go to state 148 ]
+  ! GE              [ shift and go to state 149 ]
+  ! GT              [ shift and go to state 150 ]
+  ! EQ              [ shift and go to state 151 ]
+  ! NE              [ shift and go to state 152 ]
 
 
-state 177
+state 179
 
     (67) expression -> expression MINUS expression .
     (66) expression -> expression . PLUS expression
@@ -3300,24 +3441,24 @@ state 177
     RBRACKET        reduce using rule 67 (expression -> expression MINUS expression .)
     RBRACE          reduce using rule 67 (expression -> expression MINUS expression .)
     IDENT           reduce using rule 67 (expression -> expression MINUS expression .)
-    TIMES           shift and go to state 143
-    DIVIDE          shift and go to state 144
-    MOD             shift and go to state 145
+    TIMES           shift and go to state 144
+    DIVIDE          shift and go to state 145
+    MOD             shift and go to state 146
 
   ! TIMES           [ reduce using rule 67 (expression -> expression MINUS expression .) ]
   ! DIVIDE          [ reduce using rule 67 (expression -> expression MINUS expression .) ]
   ! MOD             [ reduce using rule 67 (expression -> expression MINUS expression .) ]
-  ! PLUS            [ shift and go to state 141 ]
-  ! MINUS           [ shift and go to state 142 ]
-  ! LE              [ shift and go to state 146 ]
-  ! LT              [ shift and go to state 147 ]
-  ! GE              [ shift and go to state 148 ]
-  ! GT              [ shift and go to state 149 ]
-  ! EQ              [ shift and go to state 150 ]
-  ! NE              [ shift and go to state 151 ]
+  ! PLUS            [ shift and go to state 142 ]
+  ! MINUS           [ shift and go to state 143 ]
+  ! LE              [ shift and go to state 147 ]
+  ! LT              [ shift and go to state 148 ]
+  ! GE              [ shift and go to state 149 ]
+  ! GT              [ shift and go to state 150 ]
+  ! EQ              [ shift and go to state 151 ]
+  ! NE              [ shift and go to state 152 ]
 
 
-state 178
+state 180
 
     (68) expression -> expression TIMES expression .
     (66) expression -> expression . PLUS expression
@@ -3351,20 +3492,20 @@ state 178
     RBRACE          reduce using rule 68 (expression -> expression TIMES expression .)
     IDENT           reduce using rule 68 (expression -> expression TIMES expression .)
 
-  ! PLUS            [ shift and go to state 141 ]
-  ! MINUS           [ shift and go to state 142 ]
-  ! TIMES           [ shift and go to state 143 ]
-  ! DIVIDE          [ shift and go to state 144 ]
-  ! MOD             [ shift and go to state 145 ]
-  ! LE              [ shift and go to state 146 ]
-  ! LT              [ shift and go to state 147 ]
-  ! GE              [ shift and go to state 148 ]
-  ! GT              [ shift and go to state 149 ]
-  ! EQ              [ shift and go to state 150 ]
-  ! NE              [ shift and go to state 151 ]
+  ! PLUS            [ shift and go to state 142 ]
+  ! MINUS           [ shift and go to state 143 ]
+  ! TIMES           [ shift and go to state 144 ]
+  ! DIVIDE          [ shift and go to state 145 ]
+  ! MOD             [ shift and go to state 146 ]
+  ! LE              [ shift and go to state 147 ]
+  ! LT              [ shift and go to state 148 ]
+  ! GE              [ shift and go to state 149 ]
+  ! GT              [ shift and go to state 150 ]
+  ! EQ              [ shift and go to state 151 ]
+  ! NE              [ shift and go to state 152 ]
 
 
-state 179
+state 181
 
     (69) expression -> expression DIVIDE expression .
     (66) expression -> expression . PLUS expression
@@ -3398,20 +3539,20 @@ state 179
     RBRACE          reduce using rule 69 (expression -> expression DIVIDE expression .)
     IDENT           reduce using rule 69 (expression -> expression DIVIDE expression .)
 
-  ! PLUS            [ shift and go to state 141 ]
-  ! MINUS           [ shift and go to state 142 ]
-  ! TIMES           [ shift and go to state 143 ]
-  ! DIVIDE          [ shift and go to state 144 ]
-  ! MOD             [ shift and go to state 145 ]
-  ! LE              [ shift and go to state 146 ]
-  ! LT              [ shift and go to state 147 ]
-  ! GE              [ shift and go to state 148 ]
-  ! GT              [ shift and go to state 149 ]
-  ! EQ              [ shift and go to state 150 ]
-  ! NE              [ shift and go to state 151 ]
+  ! PLUS            [ shift and go to state 142 ]
+  ! MINUS           [ shift and go to state 143 ]
+  ! TIMES           [ shift and go to state 144 ]
+  ! DIVIDE          [ shift and go to state 145 ]
+  ! MOD             [ shift and go to state 146 ]
+  ! LE              [ shift and go to state 147 ]
+  ! LT              [ shift and go to state 148 ]
+  ! GE              [ shift and go to state 149 ]
+  ! GT              [ shift and go to state 150 ]
+  ! EQ              [ shift and go to state 151 ]
+  ! NE              [ shift and go to state 152 ]
 
 
-state 180
+state 182
 
     (70) expression -> expression MOD expression .
     (66) expression -> expression . PLUS expression
@@ -3445,20 +3586,20 @@ state 180
     RBRACE          reduce using rule 70 (expression -> expression MOD expression .)
     IDENT           reduce using rule 70 (expression -> expression MOD expression .)
 
-  ! PLUS            [ shift and go to state 141 ]
-  ! MINUS           [ shift and go to state 142 ]
-  ! TIMES           [ shift and go to state 143 ]
-  ! DIVIDE          [ shift and go to state 144 ]
-  ! MOD             [ shift and go to state 145 ]
-  ! LE              [ shift and go to state 146 ]
-  ! LT              [ shift and go to state 147 ]
-  ! GE              [ shift and go to state 148 ]
-  ! GT              [ shift and go to state 149 ]
-  ! EQ              [ shift and go to state 150 ]
-  ! NE              [ shift and go to state 151 ]
+  ! PLUS            [ shift and go to state 142 ]
+  ! MINUS           [ shift and go to state 143 ]
+  ! TIMES           [ shift and go to state 144 ]
+  ! DIVIDE          [ shift and go to state 145 ]
+  ! MOD             [ shift and go to state 146 ]
+  ! LE              [ shift and go to state 147 ]
+  ! LT              [ shift and go to state 148 ]
+  ! GE              [ shift and go to state 149 ]
+  ! GT              [ shift and go to state 150 ]
+  ! EQ              [ shift and go to state 151 ]
+  ! NE              [ shift and go to state 152 ]
 
 
-state 181
+state 183
 
     (71) expression -> expression LE expression .
     (66) expression -> expression . PLUS expression
@@ -3486,26 +3627,26 @@ state 181
     RBRACKET        reduce using rule 71 (expression -> expression LE expression .)
     RBRACE          reduce using rule 71 (expression -> expression LE expression .)
     IDENT           reduce using rule 71 (expression -> expression LE expression .)
-    PLUS            shift and go to state 141
-    MINUS           shift and go to state 142
-    TIMES           shift and go to state 143
-    DIVIDE          shift and go to state 144
-    MOD             shift and go to state 145
+    PLUS            shift and go to state 142
+    MINUS           shift and go to state 143
+    TIMES           shift and go to state 144
+    DIVIDE          shift and go to state 145
+    MOD             shift and go to state 146
 
   ! PLUS            [ reduce using rule 71 (expression -> expression LE expression .) ]
   ! MINUS           [ reduce using rule 71 (expression -> expression LE expression .) ]
   ! TIMES           [ reduce using rule 71 (expression -> expression LE expression .) ]
   ! DIVIDE          [ reduce using rule 71 (expression -> expression LE expression .) ]
   ! MOD             [ reduce using rule 71 (expression -> expression LE expression .) ]
-  ! LE              [ shift and go to state 146 ]
-  ! LT              [ shift and go to state 147 ]
-  ! GE              [ shift and go to state 148 ]
-  ! GT              [ shift and go to state 149 ]
-  ! EQ              [ shift and go to state 150 ]
-  ! NE              [ shift and go to state 151 ]
+  ! LE              [ shift and go to state 147 ]
+  ! LT              [ shift and go to state 148 ]
+  ! GE              [ shift and go to state 149 ]
+  ! GT              [ shift and go to state 150 ]
+  ! EQ              [ shift and go to state 151 ]
+  ! NE              [ shift and go to state 152 ]
 
 
-state 182
+state 184
 
     (72) expression -> expression LT expression .
     (66) expression -> expression . PLUS expression
@@ -3533,26 +3674,26 @@ state 182
     RBRACKET        reduce using rule 72 (expression -> expression LT expression .)
     RBRACE          reduce using rule 72 (expression -> expression LT expression .)
     IDENT           reduce using rule 72 (expression -> expression LT expression .)
-    PLUS            shift and go to state 141
-    MINUS           shift and go to state 142
-    TIMES           shift and go to state 143
-    DIVIDE          shift and go to state 144
-    MOD             shift and go to state 145
+    PLUS            shift and go to state 142
+    MINUS           shift and go to state 143
+    TIMES           shift and go to state 144
+    DIVIDE          shift and go to state 145
+    MOD             shift and go to state 146
 
   ! PLUS            [ reduce using rule 72 (expression -> expression LT expression .) ]
   ! MINUS           [ reduce using rule 72 (expression -> expression LT expression .) ]
   ! TIMES           [ reduce using rule 72 (expression -> expression LT expression .) ]
   ! DIVIDE          [ reduce using rule 72 (expression -> expression LT expression .) ]
   ! MOD             [ reduce using rule 72 (expression -> expression LT expression .) ]
-  ! LE              [ shift and go to state 146 ]
-  ! LT              [ shift and go to state 147 ]
-  ! GE              [ shift and go to state 148 ]
-  ! GT              [ shift and go to state 149 ]
-  ! EQ              [ shift and go to state 150 ]
-  ! NE              [ shift and go to state 151 ]
+  ! LE              [ shift and go to state 147 ]
+  ! LT              [ shift and go to state 148 ]
+  ! GE              [ shift and go to state 149 ]
+  ! GT              [ shift and go to state 150 ]
+  ! EQ              [ shift and go to state 151 ]
+  ! NE              [ shift and go to state 152 ]
 
 
-state 183
+state 185
 
     (73) expression -> expression GE expression .
     (66) expression -> expression . PLUS expression
@@ -3580,26 +3721,26 @@ state 183
     RBRACKET        reduce using rule 73 (expression -> expression GE expression .)
     RBRACE          reduce using rule 73 (expression -> expression GE expression .)
     IDENT           reduce using rule 73 (expression -> expression GE expression .)
-    PLUS            shift and go to state 141
-    MINUS           shift and go to state 142
-    TIMES           shift and go to state 143
-    DIVIDE          shift and go to state 144
-    MOD             shift and go to state 145
+    PLUS            shift and go to state 142
+    MINUS           shift and go to state 143
+    TIMES           shift and go to state 144
+    DIVIDE          shift and go to state 145
+    MOD             shift and go to state 146
 
   ! PLUS            [ reduce using rule 73 (expression -> expression GE expression .) ]
   ! MINUS           [ reduce using rule 73 (expression -> expression GE expression .) ]
   ! TIMES           [ reduce using rule 73 (expression -> expression GE expression .) ]
   ! DIVIDE          [ reduce using rule 73 (expression -> expression GE expression .) ]
   ! MOD             [ reduce using rule 73 (expression -> expression GE expression .) ]
-  ! LE              [ shift and go to state 146 ]
-  ! LT              [ shift and go to state 147 ]
-  ! GE              [ shift and go to state 148 ]
-  ! GT              [ shift and go to state 149 ]
-  ! EQ              [ shift and go to state 150 ]
-  ! NE              [ shift and go to state 151 ]
+  ! LE              [ shift and go to state 147 ]
+  ! LT              [ shift and go to state 148 ]
+  ! GE              [ shift and go to state 149 ]
+  ! GT              [ shift and go to state 150 ]
+  ! EQ              [ shift and go to state 151 ]
+  ! NE              [ shift and go to state 152 ]
 
 
-state 184
+state 186
 
     (74) expression -> expression GT expression .
     (66) expression -> expression . PLUS expression
@@ -3627,26 +3768,26 @@ state 184
     RBRACKET        reduce using rule 74 (expression -> expression GT expression .)
     RBRACE          reduce using rule 74 (expression -> expression GT expression .)
     IDENT           reduce using rule 74 (expression -> expression GT expression .)
-    PLUS            shift and go to state 141
-    MINUS           shift and go to state 142
-    TIMES           shift and go to state 143
-    DIVIDE          shift and go to state 144
-    MOD             shift and go to state 145
+    PLUS            shift and go to state 142
+    MINUS           shift and go to state 143
+    TIMES           shift and go to state 144
+    DIVIDE          shift and go to state 145
+    MOD             shift and go to state 146
 
   ! PLUS            [ reduce using rule 74 (expression -> expression GT expression .) ]
   ! MINUS           [ reduce using rule 74 (expression -> expression GT expression .) ]
   ! TIMES           [ reduce using rule 74 (expression -> expression GT expression .) ]
   ! DIVIDE          [ reduce using rule 74 (expression -> expression GT expression .) ]
   ! MOD             [ reduce using rule 74 (expression -> expression GT expression .) ]
-  ! LE              [ shift and go to state 146 ]
-  ! LT              [ shift and go to state 147 ]
-  ! GE              [ shift and go to state 148 ]
-  ! GT              [ shift and go to state 149 ]
-  ! EQ              [ shift and go to state 150 ]
-  ! NE              [ shift and go to state 151 ]
+  ! LE              [ shift and go to state 147 ]
+  ! LT              [ shift and go to state 148 ]
+  ! GE              [ shift and go to state 149 ]
+  ! GT              [ shift and go to state 150 ]
+  ! EQ              [ shift and go to state 151 ]
+  ! NE              [ shift and go to state 152 ]
 
 
-state 185
+state 187
 
     (75) expression -> expression EQ expression .
     (66) expression -> expression . PLUS expression
@@ -3670,15 +3811,15 @@ state 185
     RBRACKET        reduce using rule 75 (expression -> expression EQ expression .)
     RBRACE          reduce using rule 75 (expression -> expression EQ expression .)
     IDENT           reduce using rule 75 (expression -> expression EQ expression .)
-    PLUS            shift and go to state 141
-    MINUS           shift and go to state 142
-    TIMES           shift and go to state 143
-    DIVIDE          shift and go to state 144
-    MOD             shift and go to state 145
-    LE              shift and go to state 146
-    LT              shift and go to state 147
-    GE              shift and go to state 148
-    GT              shift and go to state 149
+    PLUS            shift and go to state 142
+    MINUS           shift and go to state 143
+    TIMES           shift and go to state 144
+    DIVIDE          shift and go to state 145
+    MOD             shift and go to state 146
+    LE              shift and go to state 147
+    LT              shift and go to state 148
+    GE              shift and go to state 149
+    GT              shift and go to state 150
 
   ! PLUS            [ reduce using rule 75 (expression -> expression EQ expression .) ]
   ! MINUS           [ reduce using rule 75 (expression -> expression EQ expression .) ]
@@ -3689,11 +3830,11 @@ state 185
   ! LT              [ reduce using rule 75 (expression -> expression EQ expression .) ]
   ! GE              [ reduce using rule 75 (expression -> expression EQ expression .) ]
   ! GT              [ reduce using rule 75 (expression -> expression EQ expression .) ]
-  ! EQ              [ shift and go to state 150 ]
-  ! NE              [ shift and go to state 151 ]
+  ! EQ              [ shift and go to state 151 ]
+  ! NE              [ shift and go to state 152 ]
 
 
-state 186
+state 188
 
     (76) expression -> expression NE expression .
     (66) expression -> expression . PLUS expression
@@ -3717,15 +3858,15 @@ state 186
     RBRACKET        reduce using rule 76 (expression -> expression NE expression .)
     RBRACE          reduce using rule 76 (expression -> expression NE expression .)
     IDENT           reduce using rule 76 (expression -> expression NE expression .)
-    PLUS            shift and go to state 141
-    MINUS           shift and go to state 142
-    TIMES           shift and go to state 143
-    DIVIDE          shift and go to state 144
-    MOD             shift and go to state 145
-    LE              shift and go to state 146
-    LT              shift and go to state 147
-    GE              shift and go to state 148
-    GT              shift and go to state 149
+    PLUS            shift and go to state 142
+    MINUS           shift and go to state 143
+    TIMES           shift and go to state 144
+    DIVIDE          shift and go to state 145
+    MOD             shift and go to state 146
+    LE              shift and go to state 147
+    LT              shift and go to state 148
+    GE              shift and go to state 149
+    GT              shift and go to state 150
 
   ! PLUS            [ reduce using rule 76 (expression -> expression NE expression .) ]
   ! MINUS           [ reduce using rule 76 (expression -> expression NE expression .) ]
@@ -3736,11 +3877,11 @@ state 186
   ! LT              [ reduce using rule 76 (expression -> expression NE expression .) ]
   ! GE              [ reduce using rule 76 (expression -> expression NE expression .) ]
   ! GT              [ reduce using rule 76 (expression -> expression NE expression .) ]
-  ! EQ              [ shift and go to state 150 ]
-  ! NE              [ shift and go to state 151 ]
+  ! EQ              [ shift and go to state 151 ]
+  ! NE              [ shift and go to state 152 ]
 
 
-state 187
+state 189
 
     (63) return_statement -> RETURN expression SEMI .
 
@@ -3748,6 +3889,7 @@ state 187
     LET             reduce using rule 63 (return_statement -> RETURN expression SEMI .)
     RETURN          reduce using rule 63 (return_statement -> RETURN expression SEMI .)
     IF              reduce using rule 63 (return_statement -> RETURN expression SEMI .)
+    MINUS           reduce using rule 63 (return_statement -> RETURN expression SEMI .)
     IDENT           reduce using rule 63 (return_statement -> RETURN expression SEMI .)
     LPAREN          reduce using rule 63 (return_statement -> RETURN expression SEMI .)
     LBRACKET        reduce using rule 63 (return_statement -> RETURN expression SEMI .)
@@ -3759,7 +3901,7 @@ state 187
     FN              reduce using rule 63 (return_statement -> RETURN expression SEMI .)
 
 
-state 188
+state 190
 
     (105) if_statement -> IF expression block . else_clause_opt
     (106) else_clause_opt -> . ELSE if_statement
@@ -3767,11 +3909,12 @@ state 188
     (108) else_clause_opt -> . empty
     (104) empty -> .
 
-    ELSE            shift and go to state 211
+    ELSE            shift and go to state 213
     RBRACE          reduce using rule 104 (empty -> .)
     LET             reduce using rule 104 (empty -> .)
     RETURN          reduce using rule 104 (empty -> .)
     IF              reduce using rule 104 (empty -> .)
+    MINUS           reduce using rule 104 (empty -> .)
     IDENT           reduce using rule 104 (empty -> .)
     LPAREN          reduce using rule 104 (empty -> .)
     LBRACKET        reduce using rule 104 (empty -> .)
@@ -3782,10 +3925,10 @@ state 188
     NEW             reduce using rule 104 (empty -> .)
     FN              reduce using rule 104 (empty -> .)
 
-    else_clause_opt                shift and go to state 210
-    empty                          shift and go to state 212
+    else_clause_opt                shift and go to state 212
+    empty                          shift and go to state 214
 
-state 189
+state 191
 
     (113) assignment -> call_expr EQUAL expression .
     (66) expression -> expression . PLUS expression
@@ -3801,43 +3944,43 @@ state 189
     (76) expression -> expression . NE expression
 
     SEMI            reduce using rule 113 (assignment -> call_expr EQUAL expression .)
-    PLUS            shift and go to state 141
-    MINUS           shift and go to state 142
-    TIMES           shift and go to state 143
-    DIVIDE          shift and go to state 144
-    MOD             shift and go to state 145
-    LE              shift and go to state 146
-    LT              shift and go to state 147
-    GE              shift and go to state 148
-    GT              shift and go to state 149
-    EQ              shift and go to state 150
-    NE              shift and go to state 151
+    PLUS            shift and go to state 142
+    MINUS           shift and go to state 143
+    TIMES           shift and go to state 144
+    DIVIDE          shift and go to state 145
+    MOD             shift and go to state 146
+    LE              shift and go to state 147
+    LT              shift and go to state 148
+    GE              shift and go to state 149
+    GT              shift and go to state 150
+    EQ              shift and go to state 151
+    NE              shift and go to state 152
 
 
-state 190
+state 192
 
     (79) call_suffix -> LPAREN arg_list_opt . RPAREN
 
-    RPAREN          shift and go to state 213
+    RPAREN          shift and go to state 215
 
 
-state 191
+state 193
 
     (84) arg_list_opt -> arg_list .
     (86) arg_list -> arg_list . COMMA argument
 
     RPAREN          reduce using rule 84 (arg_list_opt -> arg_list .)
-    COMMA           shift and go to state 214
+    COMMA           shift and go to state 216
 
 
-state 192
+state 194
 
     (85) arg_list_opt -> empty .
 
     RPAREN          reduce using rule 85 (arg_list_opt -> empty .)
 
 
-state 193
+state 195
 
     (87) arg_list -> argument .
 
@@ -3845,14 +3988,14 @@ state 193
     RPAREN          reduce using rule 87 (arg_list -> argument .)
 
 
-state 194
+state 196
 
     (88) argument -> IDENT . COLON expression
     (24) primary -> IDENT . LBRACE field_assign_list RBRACE
     (98) primary -> IDENT .
 
-    COLON           shift and go to state 215
-    LBRACE          shift and go to state 139
+    COLON           shift and go to state 217
+    LBRACE          shift and go to state 140
     LPAREN          reduce using rule 98 (primary -> IDENT .)
     DOT             reduce using rule 98 (primary -> IDENT .)
     DDCOLON         reduce using rule 98 (primary -> IDENT .)
@@ -3873,7 +4016,7 @@ state 194
     RPAREN          reduce using rule 98 (primary -> IDENT .)
 
 
-state 195
+state 197
 
     (89) argument -> expression .
     (66) expression -> expression . PLUS expression
@@ -3890,20 +4033,20 @@ state 195
 
     COMMA           reduce using rule 89 (argument -> expression .)
     RPAREN          reduce using rule 89 (argument -> expression .)
-    PLUS            shift and go to state 141
-    MINUS           shift and go to state 142
-    TIMES           shift and go to state 143
-    DIVIDE          shift and go to state 144
-    MOD             shift and go to state 145
-    LE              shift and go to state 146
-    LT              shift and go to state 147
-    GE              shift and go to state 148
-    GT              shift and go to state 149
-    EQ              shift and go to state 150
-    NE              shift and go to state 151
+    PLUS            shift and go to state 142
+    MINUS           shift and go to state 143
+    TIMES           shift and go to state 144
+    DIVIDE          shift and go to state 145
+    MOD             shift and go to state 146
+    LE              shift and go to state 147
+    LT              shift and go to state 148
+    GE              shift and go to state 149
+    GT              shift and go to state 150
+    EQ              shift and go to state 151
+    NE              shift and go to state 152
 
 
-state 196
+state 198
 
     (80) call_suffix -> DOT IDENT .
 
@@ -3933,7 +4076,7 @@ state 196
     IDENT           reduce using rule 80 (call_suffix -> DOT IDENT .)
 
 
-state 197
+state 199
 
     (81) call_suffix -> DDCOLON IDENT .
 
@@ -3963,7 +4106,7 @@ state 197
     IDENT           reduce using rule 81 (call_suffix -> DDCOLON IDENT .)
 
 
-state 198
+state 200
 
     (82) call_suffix -> ARROW IDENT .
 
@@ -3993,7 +4136,7 @@ state 198
     IDENT           reduce using rule 82 (call_suffix -> ARROW IDENT .)
 
 
-state 199
+state 201
 
     (83) call_suffix -> LBRACKET expression . RBRACKET
     (66) expression -> expression . PLUS expression
@@ -4008,21 +4151,21 @@ state 199
     (75) expression -> expression . EQ expression
     (76) expression -> expression . NE expression
 
-    RBRACKET        shift and go to state 216
-    PLUS            shift and go to state 141
-    MINUS           shift and go to state 142
-    TIMES           shift and go to state 143
-    DIVIDE          shift and go to state 144
-    MOD             shift and go to state 145
-    LE              shift and go to state 146
-    LT              shift and go to state 147
-    GE              shift and go to state 148
-    GT              shift and go to state 149
-    EQ              shift and go to state 150
-    NE              shift and go to state 151
+    RBRACKET        shift and go to state 218
+    PLUS            shift and go to state 142
+    MINUS           shift and go to state 143
+    TIMES           shift and go to state 144
+    DIVIDE          shift and go to state 145
+    MOD             shift and go to state 146
+    LE              shift and go to state 147
+    LT              shift and go to state 148
+    GE              shift and go to state 149
+    GT              shift and go to state 150
+    EQ              shift and go to state 151
+    NE              shift and go to state 152
 
 
-state 200
+state 202
 
     (90) primary -> LPAREN expression RPAREN .
 
@@ -4052,7 +4195,7 @@ state 200
     IDENT           reduce using rule 90 (primary -> LPAREN expression RPAREN .)
 
 
-state 201
+state 203
 
     (91) primary -> LBRACKET expr_list_opt RBRACKET .
 
@@ -4082,7 +4225,7 @@ state 201
     IDENT           reduce using rule 91 (primary -> LBRACKET expr_list_opt RBRACKET .)
 
 
-state 202
+state 204
 
     (94) expr_list -> expr_list COMMA . expression
     (65) expression -> . call_expr
@@ -4097,6 +4240,7 @@ state 202
     (74) expression -> . expression GT expression
     (75) expression -> . expression EQ expression
     (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
     (77) call_expr -> . call_expr call_suffix
     (78) call_expr -> . primary
     (24) primary -> . IDENT LBRACE field_assign_list RBRACE
@@ -4111,21 +4255,22 @@ state 202
     (102) primary -> . NEW qualified_identifier
     (103) primary -> . FN LPAREN parameters_opt RPAREN return_opt block
 
+    MINUS           shift and go to state 129
     IDENT           shift and go to state 123
-    LPAREN          shift and go to state 130
-    LBRACKET        shift and go to state 131
-    NUMBER          shift and go to state 132
-    STRING          shift and go to state 133
-    TRUE            shift and go to state 134
-    FALSE           shift and go to state 135
-    NEW             shift and go to state 136
-    FN              shift and go to state 137
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
 
-    expression                     shift and go to state 217
-    call_expr                      shift and go to state 154
-    primary                        shift and go to state 129
+    expression                     shift and go to state 219
+    call_expr                      shift and go to state 155
+    primary                        shift and go to state 130
 
-state 203
+state 205
 
     (101) primary -> NEW qualified_identifier LPAREN . arg_list_opt RPAREN
     (84) arg_list_opt -> . arg_list
@@ -4147,6 +4292,7 @@ state 203
     (74) expression -> . expression GT expression
     (75) expression -> . expression EQ expression
     (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
     (77) call_expr -> . call_expr call_suffix
     (78) call_expr -> . primary
     (24) primary -> . IDENT LBRACE field_assign_list RBRACE
@@ -4162,48 +4308,49 @@ state 203
     (103) primary -> . FN LPAREN parameters_opt RPAREN return_opt block
 
     RPAREN          reduce using rule 104 (empty -> .)
-    IDENT           shift and go to state 194
-    LPAREN          shift and go to state 130
-    LBRACKET        shift and go to state 131
-    NUMBER          shift and go to state 132
-    STRING          shift and go to state 133
-    TRUE            shift and go to state 134
-    FALSE           shift and go to state 135
-    NEW             shift and go to state 136
-    FN              shift and go to state 137
+    IDENT           shift and go to state 196
+    MINUS           shift and go to state 129
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
 
-    arg_list_opt                   shift and go to state 218
-    arg_list                       shift and go to state 191
-    empty                          shift and go to state 192
-    argument                       shift and go to state 193
-    expression                     shift and go to state 195
-    call_expr                      shift and go to state 154
-    primary                        shift and go to state 129
+    arg_list_opt                   shift and go to state 220
+    arg_list                       shift and go to state 193
+    empty                          shift and go to state 194
+    argument                       shift and go to state 195
+    expression                     shift and go to state 197
+    call_expr                      shift and go to state 155
+    primary                        shift and go to state 130
 
-state 204
+state 206
 
     (115) qualified_identifier -> IDENT DDCOLON . IDENT
 
-    IDENT           shift and go to state 219
+    IDENT           shift and go to state 221
 
 
-state 205
+state 207
 
     (103) primary -> FN LPAREN parameters_opt . RPAREN return_opt block
 
-    RPAREN          shift and go to state 220
+    RPAREN          shift and go to state 222
 
 
-state 206
+state 208
 
     (61) var_decl -> LET IDENT COLON type_expr . EQUAL expression SEMI
     (62) var_decl -> LET IDENT COLON type_expr . SEMI
 
-    EQUAL           shift and go to state 221
-    SEMI            shift and go to state 222
+    EQUAL           shift and go to state 223
+    SEMI            shift and go to state 224
 
 
-state 207
+state 209
 
     (28) field_assign -> IDENT COLON . expression opt_comma
     (65) expression -> . call_expr
@@ -4218,6 +4365,7 @@ state 207
     (74) expression -> . expression GT expression
     (75) expression -> . expression EQ expression
     (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
     (77) call_expr -> . call_expr call_suffix
     (78) call_expr -> . primary
     (24) primary -> . IDENT LBRACE field_assign_list RBRACE
@@ -4232,21 +4380,22 @@ state 207
     (102) primary -> . NEW qualified_identifier
     (103) primary -> . FN LPAREN parameters_opt RPAREN return_opt block
 
+    MINUS           shift and go to state 129
     IDENT           shift and go to state 123
-    LPAREN          shift and go to state 130
-    LBRACKET        shift and go to state 131
-    NUMBER          shift and go to state 132
-    STRING          shift and go to state 133
-    TRUE            shift and go to state 134
-    FALSE           shift and go to state 135
-    NEW             shift and go to state 136
-    FN              shift and go to state 137
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
 
-    expression                     shift and go to state 223
-    call_expr                      shift and go to state 154
-    primary                        shift and go to state 129
+    expression                     shift and go to state 225
+    call_expr                      shift and go to state 155
+    primary                        shift and go to state 130
 
-state 208
+state 210
 
     (24) primary -> IDENT LBRACE field_assign_list RBRACE .
 
@@ -4276,7 +4425,7 @@ state 208
     IDENT           reduce using rule 24 (primary -> IDENT LBRACE field_assign_list RBRACE .)
 
 
-state 209
+state 211
 
     (25) field_assign_list -> field_assign_list field_assign .
 
@@ -4284,7 +4433,7 @@ state 209
     IDENT           reduce using rule 25 (field_assign_list -> field_assign_list field_assign .)
 
 
-state 210
+state 212
 
     (105) if_statement -> IF expression block else_clause_opt .
 
@@ -4292,6 +4441,7 @@ state 210
     LET             reduce using rule 105 (if_statement -> IF expression block else_clause_opt .)
     RETURN          reduce using rule 105 (if_statement -> IF expression block else_clause_opt .)
     IF              reduce using rule 105 (if_statement -> IF expression block else_clause_opt .)
+    MINUS           reduce using rule 105 (if_statement -> IF expression block else_clause_opt .)
     IDENT           reduce using rule 105 (if_statement -> IF expression block else_clause_opt .)
     LPAREN          reduce using rule 105 (if_statement -> IF expression block else_clause_opt .)
     LBRACKET        reduce using rule 105 (if_statement -> IF expression block else_clause_opt .)
@@ -4303,7 +4453,7 @@ state 210
     FN              reduce using rule 105 (if_statement -> IF expression block else_clause_opt .)
 
 
-state 211
+state 213
 
     (106) else_clause_opt -> ELSE . if_statement
     (107) else_clause_opt -> ELSE . block
@@ -4313,10 +4463,10 @@ state 211
     IF              shift and go to state 127
     LBRACE          shift and go to state 103
 
-    if_statement                   shift and go to state 224
-    block                          shift and go to state 225
+    if_statement                   shift and go to state 226
+    block                          shift and go to state 227
 
-state 212
+state 214
 
     (108) else_clause_opt -> empty .
 
@@ -4324,6 +4474,7 @@ state 212
     LET             reduce using rule 108 (else_clause_opt -> empty .)
     RETURN          reduce using rule 108 (else_clause_opt -> empty .)
     IF              reduce using rule 108 (else_clause_opt -> empty .)
+    MINUS           reduce using rule 108 (else_clause_opt -> empty .)
     IDENT           reduce using rule 108 (else_clause_opt -> empty .)
     LPAREN          reduce using rule 108 (else_clause_opt -> empty .)
     LBRACKET        reduce using rule 108 (else_clause_opt -> empty .)
@@ -4335,7 +4486,7 @@ state 212
     FN              reduce using rule 108 (else_clause_opt -> empty .)
 
 
-state 213
+state 215
 
     (79) call_suffix -> LPAREN arg_list_opt RPAREN .
 
@@ -4365,7 +4516,7 @@ state 213
     IDENT           reduce using rule 79 (call_suffix -> LPAREN arg_list_opt RPAREN .)
 
 
-state 214
+state 216
 
     (86) arg_list -> arg_list COMMA . argument
     (88) argument -> . IDENT COLON expression
@@ -4382,6 +4533,7 @@ state 214
     (74) expression -> . expression GT expression
     (75) expression -> . expression EQ expression
     (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
     (77) call_expr -> . call_expr call_suffix
     (78) call_expr -> . primary
     (24) primary -> . IDENT LBRACE field_assign_list RBRACE
@@ -4396,22 +4548,23 @@ state 214
     (102) primary -> . NEW qualified_identifier
     (103) primary -> . FN LPAREN parameters_opt RPAREN return_opt block
 
-    IDENT           shift and go to state 194
-    LPAREN          shift and go to state 130
-    LBRACKET        shift and go to state 131
-    NUMBER          shift and go to state 132
-    STRING          shift and go to state 133
-    TRUE            shift and go to state 134
-    FALSE           shift and go to state 135
-    NEW             shift and go to state 136
-    FN              shift and go to state 137
+    IDENT           shift and go to state 196
+    MINUS           shift and go to state 129
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
 
-    argument                       shift and go to state 226
-    expression                     shift and go to state 195
-    call_expr                      shift and go to state 154
-    primary                        shift and go to state 129
+    argument                       shift and go to state 228
+    expression                     shift and go to state 197
+    call_expr                      shift and go to state 155
+    primary                        shift and go to state 130
 
-state 215
+state 217
 
     (88) argument -> IDENT COLON . expression
     (65) expression -> . call_expr
@@ -4426,6 +4579,7 @@ state 215
     (74) expression -> . expression GT expression
     (75) expression -> . expression EQ expression
     (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
     (77) call_expr -> . call_expr call_suffix
     (78) call_expr -> . primary
     (24) primary -> . IDENT LBRACE field_assign_list RBRACE
@@ -4440,21 +4594,22 @@ state 215
     (102) primary -> . NEW qualified_identifier
     (103) primary -> . FN LPAREN parameters_opt RPAREN return_opt block
 
+    MINUS           shift and go to state 129
     IDENT           shift and go to state 123
-    LPAREN          shift and go to state 130
-    LBRACKET        shift and go to state 131
-    NUMBER          shift and go to state 132
-    STRING          shift and go to state 133
-    TRUE            shift and go to state 134
-    FALSE           shift and go to state 135
-    NEW             shift and go to state 136
-    FN              shift and go to state 137
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
 
-    expression                     shift and go to state 227
-    call_expr                      shift and go to state 154
-    primary                        shift and go to state 129
+    expression                     shift and go to state 229
+    call_expr                      shift and go to state 155
+    primary                        shift and go to state 130
 
-state 216
+state 218
 
     (83) call_suffix -> LBRACKET expression RBRACKET .
 
@@ -4484,7 +4639,7 @@ state 216
     IDENT           reduce using rule 83 (call_suffix -> LBRACKET expression RBRACKET .)
 
 
-state 217
+state 219
 
     (94) expr_list -> expr_list COMMA expression .
     (66) expression -> expression . PLUS expression
@@ -4501,27 +4656,27 @@ state 217
 
     COMMA           reduce using rule 94 (expr_list -> expr_list COMMA expression .)
     RBRACKET        reduce using rule 94 (expr_list -> expr_list COMMA expression .)
-    PLUS            shift and go to state 141
-    MINUS           shift and go to state 142
-    TIMES           shift and go to state 143
-    DIVIDE          shift and go to state 144
-    MOD             shift and go to state 145
-    LE              shift and go to state 146
-    LT              shift and go to state 147
-    GE              shift and go to state 148
-    GT              shift and go to state 149
-    EQ              shift and go to state 150
-    NE              shift and go to state 151
+    PLUS            shift and go to state 142
+    MINUS           shift and go to state 143
+    TIMES           shift and go to state 144
+    DIVIDE          shift and go to state 145
+    MOD             shift and go to state 146
+    LE              shift and go to state 147
+    LT              shift and go to state 148
+    GE              shift and go to state 149
+    GT              shift and go to state 150
+    EQ              shift and go to state 151
+    NE              shift and go to state 152
 
 
-state 218
+state 220
 
     (101) primary -> NEW qualified_identifier LPAREN arg_list_opt . RPAREN
 
-    RPAREN          shift and go to state 228
+    RPAREN          shift and go to state 230
 
 
-state 219
+state 221
 
     (115) qualified_identifier -> IDENT DDCOLON IDENT .
 
@@ -4551,7 +4706,7 @@ state 219
     IDENT           reduce using rule 115 (qualified_identifier -> IDENT DDCOLON IDENT .)
 
 
-state 220
+state 222
 
     (103) primary -> FN LPAREN parameters_opt RPAREN . return_opt block
     (43) return_opt -> . ARROW type_expr
@@ -4561,10 +4716,10 @@ state 220
     ARROW           shift and go to state 83
     LBRACE          reduce using rule 104 (empty -> .)
 
-    return_opt                     shift and go to state 229
+    return_opt                     shift and go to state 231
     empty                          shift and go to state 84
 
-state 221
+state 223
 
     (61) var_decl -> LET IDENT COLON type_expr EQUAL . expression SEMI
     (65) expression -> . call_expr
@@ -4579,6 +4734,7 @@ state 221
     (74) expression -> . expression GT expression
     (75) expression -> . expression EQ expression
     (76) expression -> . expression NE expression
+    (117) expression -> . MINUS expression
     (77) call_expr -> . call_expr call_suffix
     (78) call_expr -> . primary
     (24) primary -> . IDENT LBRACE field_assign_list RBRACE
@@ -4593,21 +4749,22 @@ state 221
     (102) primary -> . NEW qualified_identifier
     (103) primary -> . FN LPAREN parameters_opt RPAREN return_opt block
 
+    MINUS           shift and go to state 129
     IDENT           shift and go to state 123
-    LPAREN          shift and go to state 130
-    LBRACKET        shift and go to state 131
-    NUMBER          shift and go to state 132
-    STRING          shift and go to state 133
-    TRUE            shift and go to state 134
-    FALSE           shift and go to state 135
-    NEW             shift and go to state 136
-    FN              shift and go to state 137
+    LPAREN          shift and go to state 131
+    LBRACKET        shift and go to state 132
+    NUMBER          shift and go to state 133
+    STRING          shift and go to state 134
+    TRUE            shift and go to state 135
+    FALSE           shift and go to state 136
+    NEW             shift and go to state 137
+    FN              shift and go to state 138
 
-    expression                     shift and go to state 230
-    call_expr                      shift and go to state 154
-    primary                        shift and go to state 129
+    expression                     shift and go to state 232
+    call_expr                      shift and go to state 155
+    primary                        shift and go to state 130
 
-state 222
+state 224
 
     (62) var_decl -> LET IDENT COLON type_expr SEMI .
 
@@ -4615,6 +4772,7 @@ state 222
     LET             reduce using rule 62 (var_decl -> LET IDENT COLON type_expr SEMI .)
     RETURN          reduce using rule 62 (var_decl -> LET IDENT COLON type_expr SEMI .)
     IF              reduce using rule 62 (var_decl -> LET IDENT COLON type_expr SEMI .)
+    MINUS           reduce using rule 62 (var_decl -> LET IDENT COLON type_expr SEMI .)
     IDENT           reduce using rule 62 (var_decl -> LET IDENT COLON type_expr SEMI .)
     LPAREN          reduce using rule 62 (var_decl -> LET IDENT COLON type_expr SEMI .)
     LBRACKET        reduce using rule 62 (var_decl -> LET IDENT COLON type_expr SEMI .)
@@ -4626,7 +4784,7 @@ state 222
     FN              reduce using rule 62 (var_decl -> LET IDENT COLON type_expr SEMI .)
 
 
-state 223
+state 225
 
     (28) field_assign -> IDENT COLON expression . opt_comma
     (66) expression -> expression . PLUS expression
@@ -4644,25 +4802,25 @@ state 223
     (30) opt_comma -> . empty
     (104) empty -> .
 
-    PLUS            shift and go to state 141
-    MINUS           shift and go to state 142
-    TIMES           shift and go to state 143
-    DIVIDE          shift and go to state 144
-    MOD             shift and go to state 145
-    LE              shift and go to state 146
-    LT              shift and go to state 147
-    GE              shift and go to state 148
-    GT              shift and go to state 149
-    EQ              shift and go to state 150
-    NE              shift and go to state 151
+    PLUS            shift and go to state 142
+    MINUS           shift and go to state 143
+    TIMES           shift and go to state 144
+    DIVIDE          shift and go to state 145
+    MOD             shift and go to state 146
+    LE              shift and go to state 147
+    LT              shift and go to state 148
+    GE              shift and go to state 149
+    GT              shift and go to state 150
+    EQ              shift and go to state 151
+    NE              shift and go to state 152
     COMMA           shift and go to state 94
     RBRACE          reduce using rule 104 (empty -> .)
     IDENT           reduce using rule 104 (empty -> .)
 
-    opt_comma                      shift and go to state 231
+    opt_comma                      shift and go to state 233
     empty                          shift and go to state 95
 
-state 224
+state 226
 
     (106) else_clause_opt -> ELSE if_statement .
 
@@ -4670,6 +4828,7 @@ state 224
     LET             reduce using rule 106 (else_clause_opt -> ELSE if_statement .)
     RETURN          reduce using rule 106 (else_clause_opt -> ELSE if_statement .)
     IF              reduce using rule 106 (else_clause_opt -> ELSE if_statement .)
+    MINUS           reduce using rule 106 (else_clause_opt -> ELSE if_statement .)
     IDENT           reduce using rule 106 (else_clause_opt -> ELSE if_statement .)
     LPAREN          reduce using rule 106 (else_clause_opt -> ELSE if_statement .)
     LBRACKET        reduce using rule 106 (else_clause_opt -> ELSE if_statement .)
@@ -4681,7 +4840,7 @@ state 224
     FN              reduce using rule 106 (else_clause_opt -> ELSE if_statement .)
 
 
-state 225
+state 227
 
     (107) else_clause_opt -> ELSE block .
 
@@ -4689,6 +4848,7 @@ state 225
     LET             reduce using rule 107 (else_clause_opt -> ELSE block .)
     RETURN          reduce using rule 107 (else_clause_opt -> ELSE block .)
     IF              reduce using rule 107 (else_clause_opt -> ELSE block .)
+    MINUS           reduce using rule 107 (else_clause_opt -> ELSE block .)
     IDENT           reduce using rule 107 (else_clause_opt -> ELSE block .)
     LPAREN          reduce using rule 107 (else_clause_opt -> ELSE block .)
     LBRACKET        reduce using rule 107 (else_clause_opt -> ELSE block .)
@@ -4700,7 +4860,7 @@ state 225
     FN              reduce using rule 107 (else_clause_opt -> ELSE block .)
 
 
-state 226
+state 228
 
     (86) arg_list -> arg_list COMMA argument .
 
@@ -4708,7 +4868,7 @@ state 226
     RPAREN          reduce using rule 86 (arg_list -> arg_list COMMA argument .)
 
 
-state 227
+state 229
 
     (88) argument -> IDENT COLON expression .
     (66) expression -> expression . PLUS expression
@@ -4725,20 +4885,20 @@ state 227
 
     COMMA           reduce using rule 88 (argument -> IDENT COLON expression .)
     RPAREN          reduce using rule 88 (argument -> IDENT COLON expression .)
-    PLUS            shift and go to state 141
-    MINUS           shift and go to state 142
-    TIMES           shift and go to state 143
-    DIVIDE          shift and go to state 144
-    MOD             shift and go to state 145
-    LE              shift and go to state 146
-    LT              shift and go to state 147
-    GE              shift and go to state 148
-    GT              shift and go to state 149
-    EQ              shift and go to state 150
-    NE              shift and go to state 151
+    PLUS            shift and go to state 142
+    MINUS           shift and go to state 143
+    TIMES           shift and go to state 144
+    DIVIDE          shift and go to state 145
+    MOD             shift and go to state 146
+    LE              shift and go to state 147
+    LT              shift and go to state 148
+    GE              shift and go to state 149
+    GT              shift and go to state 150
+    EQ              shift and go to state 151
+    NE              shift and go to state 152
 
 
-state 228
+state 230
 
     (101) primary -> NEW qualified_identifier LPAREN arg_list_opt RPAREN .
 
@@ -4768,16 +4928,16 @@ state 228
     IDENT           reduce using rule 101 (primary -> NEW qualified_identifier LPAREN arg_list_opt RPAREN .)
 
 
-state 229
+state 231
 
     (103) primary -> FN LPAREN parameters_opt RPAREN return_opt . block
     (53) block -> . LBRACE statement_list RBRACE
 
     LBRACE          shift and go to state 103
 
-    block                          shift and go to state 232
+    block                          shift and go to state 234
 
-state 230
+state 232
 
     (61) var_decl -> LET IDENT COLON type_expr EQUAL expression . SEMI
     (66) expression -> expression . PLUS expression
@@ -4792,21 +4952,21 @@ state 230
     (75) expression -> expression . EQ expression
     (76) expression -> expression . NE expression
 
-    SEMI            shift and go to state 233
-    PLUS            shift and go to state 141
-    MINUS           shift and go to state 142
-    TIMES           shift and go to state 143
-    DIVIDE          shift and go to state 144
-    MOD             shift and go to state 145
-    LE              shift and go to state 146
-    LT              shift and go to state 147
-    GE              shift and go to state 148
-    GT              shift and go to state 149
-    EQ              shift and go to state 150
-    NE              shift and go to state 151
+    SEMI            shift and go to state 235
+    PLUS            shift and go to state 142
+    MINUS           shift and go to state 143
+    TIMES           shift and go to state 144
+    DIVIDE          shift and go to state 145
+    MOD             shift and go to state 146
+    LE              shift and go to state 147
+    LT              shift and go to state 148
+    GE              shift and go to state 149
+    GT              shift and go to state 150
+    EQ              shift and go to state 151
+    NE              shift and go to state 152
 
 
-state 231
+state 233
 
     (28) field_assign -> IDENT COLON expression opt_comma .
 
@@ -4814,7 +4974,7 @@ state 231
     IDENT           reduce using rule 28 (field_assign -> IDENT COLON expression opt_comma .)
 
 
-state 232
+state 234
 
     (103) primary -> FN LPAREN parameters_opt RPAREN return_opt block .
 
@@ -4844,7 +5004,7 @@ state 232
     IDENT           reduce using rule 103 (primary -> FN LPAREN parameters_opt RPAREN return_opt block .)
 
 
-state 233
+state 235
 
     (61) var_decl -> LET IDENT COLON type_expr EQUAL expression SEMI .
 
@@ -4852,6 +5012,7 @@ state 233
     LET             reduce using rule 61 (var_decl -> LET IDENT COLON type_expr EQUAL expression SEMI .)
     RETURN          reduce using rule 61 (var_decl -> LET IDENT COLON type_expr EQUAL expression SEMI .)
     IF              reduce using rule 61 (var_decl -> LET IDENT COLON type_expr EQUAL expression SEMI .)
+    MINUS           reduce using rule 61 (var_decl -> LET IDENT COLON type_expr EQUAL expression SEMI .)
     IDENT           reduce using rule 61 (var_decl -> LET IDENT COLON type_expr EQUAL expression SEMI .)
     LPAREN          reduce using rule 61 (var_decl -> LET IDENT COLON type_expr EQUAL expression SEMI .)
     LBRACKET        reduce using rule 61 (var_decl -> LET IDENT COLON type_expr EQUAL expression SEMI .)
@@ -4868,6 +5029,6 @@ WARNING:
 WARNING: shift/reduce conflict for IDENT in state 33 resolved as shift
 WARNING: shift/reduce conflict for IDENT in state 99 resolved as shift
 WARNING: shift/reduce conflict for LBRACE in state 123 resolved as shift
-WARNING: shift/reduce conflict for IDENT in state 139 resolved as shift
-WARNING: shift/reduce conflict for LPAREN in state 168 resolved as shift
-WARNING: shift/reduce conflict for DDCOLON in state 169 resolved as shift
+WARNING: shift/reduce conflict for IDENT in state 140 resolved as shift
+WARNING: shift/reduce conflict for LPAREN in state 170 resolved as shift
+WARNING: shift/reduce conflict for DDCOLON in state 171 resolved as shift

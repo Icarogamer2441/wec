@@ -4,7 +4,7 @@ WEC is a programming language that is designed to be easy to learn and use.<br>
 
 ## Examples
 
-You can find examples of WEC code in the `./examples/` directory.
+You can find examples of WEC code in the [./examples/](./examples/) directory.
 
 ## Installation
 
