@@ -592,8 +592,8 @@ def p_primary_boolean(p):
     p[0] = Literal(value=value)
 
 def p_primary_new(p):
-    """primary : NEW IDENT LPAREN arg_list_opt RPAREN
-                | NEW IDENT"""
+    """primary : NEW qualified_identifier LPAREN arg_list_opt RPAREN
+                | NEW qualified_identifier"""
     if len(p) == 3:
          p[0] = NewExpr(type_name=p[2], args=[])
     else:
@@ -652,6 +652,14 @@ def p_error(p):
         print("Syntax error at token", p.type, "with value", p.value)
     else:
         print("Syntax error: EOF")
+
+def p_qualified_identifier(p):
+    """qualified_identifier : IDENT DDCOLON IDENT
+                            | IDENT"""
+    if len(p) == 2:
+         p[0] = p[1]
+    else:
+         p[0] = p[1] + "::" + p[3]
 
 parser = yacc.yacc()
 
