@@ -1,0 +1,30 @@
+module arrays;
+
+fn main() -> i32 {
+    let mylist: i32List; // types of lists are i32, f32, str, bool, etc.
+    mylist.append(1);
+    mylist.append(2);
+    mylist.append(3);
+    mylist.append(4);
+    mylist.append(5);
+    mylist.pop();
+    mylist.insert(0, 0);
+    wec.print("list length: ", mylist.length());
+    mylist.remove(2);
+    wec.print("list: ", mylist);
+    wec.print("list[0]: ", mylist[0]);
+    wec.print("new list length: ", mylist.length());
+    mylist.foreach(fn(item: i32) -> i32 {
+        wec.print("item: ", item);
+        return item;
+    });
+    mylist.map(fn(item: i32) -> i32 {
+        return item * 2;
+    });
+    wec.print("list: ", mylist);
+    mylist.filter(fn(item: i32) -> bool {
+        return item % 2 == 0;
+    });
+    
+    return 0;
+}

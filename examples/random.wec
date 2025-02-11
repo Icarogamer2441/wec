@@ -1,0 +1,11 @@
+module random;
+
+fn main() -> i32 {
+    let randomInt: i32 = wec.randomInt(1, 100);
+    let randomFloat: f32 = wec.randomFloat(1.0, 100.0);
+    let randomString: str = wec.randomString("idk", "what", "to", "put");
+    wec.print("Random number: ", randomInt);
+    wec.print("Random float: ", randomFloat);
+    wec.print("Random string: ", randomString);
+    return 0;
+}

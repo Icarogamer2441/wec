@@ -1,0 +1,46 @@
+module classes;
+
+class Math {
+    public x: i32;
+    public y: i32;
+
+    fn constructor(x: i32, operator: str, y: i32) -> i32 {
+        this.x = x;
+        this.y = y;
+        if operator == "+" {
+            return this.add();
+        } else if operator == "-" {
+            return this.sub();
+        } else if operator == "*" {
+            return this.mul();
+        } else if operator == "/" {
+            return this.div();
+        } else {
+            return 0;
+        }
+    }
+
+    fn add() -> i32 {
+        return this.x + this.y;
+    }
+    
+    fn sub() -> i32 {
+        return this.x - this.y;
+    }
+
+    fn mul() -> i32 {
+        return this.x * this.y;
+    }
+
+    fn div() -> i32 {
+        return this.x / this.y;
+    }
+}
+
+fn main() -> i32 {
+    let sum: Math = new Math;
+    sum.x = 10;
+    sum.y = 20;
+    wec.print("sum: ", sum(10, "+", 20));
+    return 0;
+}

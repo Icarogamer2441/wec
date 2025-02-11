@@ -1,0 +1,7 @@
+module inputs;
+
+fn main() -> i32 {
+    let input: str = wec.input("Enter a number: ");
+    wec.print("You entered: ", input.to_int());
+    return 0;
+}

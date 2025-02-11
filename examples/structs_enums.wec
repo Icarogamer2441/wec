@@ -1,0 +1,29 @@
+module structs_enums;
+
+struct Person {
+    name: String,
+    age: i32
+}
+
+enum Color {
+    white,
+    black,
+    yellow
+}
+
+join Person and Color as PersonAndColor {
+    name: String,
+    age: i32,
+    color: Color
+}
+
+fn main() -> i32 {
+    let person: Person = Person { name: "John", age: 30 };
+    wec.print("person: ", person->name);
+    wec.print("age: ", person->age);
+    let person_color: PersonAndColor = PersonAndColor { name: "John", age: 30, color: Color::white };
+    wec.print("person_color: ", person_color->name);
+    wec.print("person_color: ", person_color->age);
+    wec.print("person_color: ", person_color->color.to_int());
+    return 0;
+}

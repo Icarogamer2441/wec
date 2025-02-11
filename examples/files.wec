@@ -1,0 +1,11 @@
+module files;
+
+fn main() -> i32 {
+    let file: WECFile = new wec::File;
+    file.open("test.txt", "w");
+    file.write("Hello, world!\n");
+    file.close();
+    let content: str = wec::File("test.txt", "r").read();
+    wec.print("Content: ", content);
+    return 0;
+}

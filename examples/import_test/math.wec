@@ -1,0 +1,16 @@
+module math;
+
+fn add(x: i32, y: i32) -> i32 {
+    return x + y;
+}
+
+class Math {
+    public x: i32;
+    public y: i32;
+
+    fn constructor(x: i32, y: i32) -> i32 {
+        this.x = x;
+        this.y = y;
+        return add(this.x, this.y);
+    }
+}

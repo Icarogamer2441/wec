@@ -1,0 +1,15 @@
+module main;
+
+// import "math"; // uncomment this to use the math module from the home_folder/weclibs/
+import "./math"; // you can use only "math" if the file is in your home_folder/weclibs/
+// use python wec.py -i path/to/math.wec to install the math module in your home_folder/weclibs/
+// you can use the -i with any .wec file you want to install
+
+fn main() -> i32 {
+    wec.print("10 + 20 = ", math.add(10, 20));
+    let m: math::Math = new math::Math;
+    m.x = 10;
+    m.y = 20;
+    wec.print("30 + 50 = ", m(30, 50));
+    return 0;
+}

@@ -1,0 +1,34 @@
+module some_builtin_funcs;
+
+fn test_join_str() -> str {
+    return wec.join_str("Hello", " ", "world");
+}
+
+fn test_join_int() -> i32 {
+    return wec.join_int(1, 2, 3); // 123
+}
+
+fn test_join_float() -> f32 {
+    return wec.join_float(1.0, 2.5, 3.5); // 123.55
+}
+
+fn main() -> i32 {
+    wec.print("test_join_str: ", test_join_str());
+    wec.print("test_join_int: ", test_join_int());
+    wec.print("test_join_float: ", test_join_float());
+
+    wec.print("test_join_str type: ", wec.type_of(test_join_str()));
+    wec.print("test_join_int type: ", wec.type_of(test_join_int()));
+    wec.print("test_join_float type: ", wec.type_of(test_join_float()));
+
+    wec.print("test_join_int to str: ", wec.type_of(test_join_int().to_str()));
+    wec.print("test_join_float to str: ", wec.type_of(test_join_float().to_str()));
+
+    wec.print("str to int: ", wec.type_of("93".to_int()));
+    wec.print("str to float: ", wec.type_of("510.092".to_float()));
+
+    wec.print("int to str: ", wec.type_of(93.to_str()));
+    wec.print("float to str: ", wec.type_of(510.092.to_str()));
+
+    return 0;
+}

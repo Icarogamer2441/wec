@@ -1,0 +1,20 @@
+module implements;
+
+struct Animal {
+    name: String,
+    age: i32
+}
+
+implement Dog uses Animal {
+    fn bark() -> str {
+        return "Woof!";
+    }
+}
+
+fn main() -> i32 {
+    let dog: Dog = Dog { name: "Buddy", age: 3 };
+    wec.print("Dog: ", dog->name);
+    wec.print("Dog: ", dog->age);
+    wec.print("Dog: ", dog.bark());
+    return 0;
+}
