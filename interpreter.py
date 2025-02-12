@@ -15,6 +15,13 @@ import math
 import os
 import sys
 
+# NEW: Global flag for compiled mode (set via wec.py -c) and a setter function.
+COMPILED_MODE = False
+
+def set_compiled_mode(mode):
+    global COMPILED_MODE
+    COMPILED_MODE = mode
+
 # Exceção para controlar a instrução return
 class ReturnException(Exception):
     def __init__(self, value):
@@ -850,9 +857,7 @@ class WECMatrix(list):
         return self  # allow chaining if desired
 
     def append(self, value):
-        # If the matrix has a dimension set and value is a list, handle as a row or multiple rows.
         if hasattr(self, "dimensions") and self.dimensions and isinstance(value, list):
-            # If the value is a list of rows (each row is a list), then iterate and append each row.
             if len(value) > 0 and any(isinstance(x, list) for x in value):
                 for row in value:
                     if not isinstance(row, WECList):
@@ -863,22 +868,36 @@ class WECMatrix(list):
                         super(WECMatrix, self).append(row)
                 return
             else:
-                # Otherwise, treat value as a single row (a list of elements)
                 new_row = WECList(value)
                 new_row.wec_type = self.wec_type.replace("Matrix", "List") if hasattr(self, "wec_type") else "List"
                 super(WECMatrix, self).append(new_row)
                 return
-        # Fallback to default list behavior
         super(WECMatrix, self).append(value)
 
     def dot(self, other):
-        # Realiza a multiplicação de matrizes.
+        # NEW: If compiled mode is enabled, use NumPy for the dot operation.
+        from interpreter import COMPILED_MODE
+        if COMPILED_MODE:
+            import numpy as np
+            try:
+                arr1 = np.array([list(row) for row in self], dtype=float)
+                arr2 = np.array([list(row) for row in other], dtype=float)
+            except Exception as e:
+                raise Exception("Error converting matrix to numpy array: " + str(e))
+            result_arr = np.dot(arr1, arr2)
+            result = WECMatrix()
+            result.to(self.dimensions)
+            result.wec_type = self.wec_type
+            for row in result_arr:
+                new_row = WECList(row.tolist())
+                new_row.wec_type = "i32List"
+                result.append(new_row)
+            return result
+        # Fallback to original implementation
         if not self or not other:
             raise Exception("Empty matrix cannot be used for dot multiplication")
-        # Assume que self tem dimensão (r x c) e other tem (c x k)
         r = len(self)
         c = len(self[0])
-        # Verifica que todas as linhas de self têm o mesmo número de colunas
         for row in self:
             if len(row) != c:
                 raise Exception("Inconsistent dimensions in first matrix")
@@ -917,7 +936,28 @@ class WECMatrix(list):
         return result
 
     def __add__(self, other):
-        # Se other é um escalar, soma elemento a elemento.
+        from interpreter import COMPILED_MODE
+        if COMPILED_MODE:
+            import numpy as np
+            if isinstance(other, (int, float)):
+                arr = np.array([list(row) for row in self], dtype=float) + other
+            elif isinstance(other, WECMatrix):
+                arr_self = np.array([list(row) for row in self], dtype=float)
+                arr_other = np.array([list(row) for row in other], dtype=float)
+                arr = arr_self + arr_other
+            else:
+                raise Exception("Addition not supported between matrix and non-matrix")
+            result = WECMatrix()
+            result.to(self.dimensions)
+            result.wec_type = self.wec_type
+            if arr.ndim == 1:
+                arr = np.array([arr])
+            for row in arr:
+                new_row = WECList(row.tolist())
+                new_row.wec_type = "i32List"
+                result.append(new_row)
+            return result
+        # Original implementation for scalar addition or matrix addition with broadcasting.
         if isinstance(other, (int, float)):
             result = WECMatrix()
             result.to(self.dimensions)
@@ -930,12 +970,10 @@ class WECMatrix(list):
                 result.append(new_row)
             return result
         elif isinstance(other, WECMatrix):
-            # Elementwise addition with broadcasting support among matrices
             rows_self = len(self)
             cols_self = len(self[0]) if rows_self > 0 else 0
             rows_other = len(other)
             cols_other = len(other[0]) if rows_other > 0 else 0
-
             if rows_self == rows_other:
                 result_rows = rows_self
             elif rows_self == 1:
@@ -944,7 +982,6 @@ class WECMatrix(list):
                 result_rows = rows_self
             else:
                 raise Exception("Incompatible row dimensions for matrix addition")
-
             if cols_self == cols_other:
                 result_cols = cols_self
             elif cols_self == 1:
@@ -953,9 +990,8 @@ class WECMatrix(list):
                 result_cols = cols_self
             else:
                 raise Exception("Incompatible column dimensions for matrix addition")
-
             result = WECMatrix()
-            result.to(self.dimensions)   # Preserva a mesma configuração de dimensão (normalmente 2D)
+            result.to(self.dimensions)
             result.wec_type = self.wec_type
             for i in range(result_rows):
                 new_row = WECList()
@@ -965,12 +1001,10 @@ class WECMatrix(list):
                         val_self = self[0][0] if cols_self == 1 else self[0][j]
                     else:
                         val_self = self[i][0] if cols_self == 1 else self[i][j]
-
                     if rows_other == 1:
                         val_other = other[0][0] if cols_other == 1 else other[0][j]
                     else:
                         val_other = other[i][0] if cols_other == 1 else other[i][j]
-
                     new_row.append(val_self + val_other)
                 result.append(new_row)
             return result

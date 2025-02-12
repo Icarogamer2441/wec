@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 import sys
 from parser_lexer import parse_wec
-from interpreter import Interpreter
+from interpreter import Interpreter, set_compiled_mode
 
 def main():
+    version = "1.0.0"
     if len(sys.argv) < 2:
-        print("Usage: wec.py [-i] <source file>")
+        print("Usage: wec.py [-i|-c|-x|-v|-h] <source file>")
         sys.exit(1)
 
     # Verifica se o modo de instalação foi passado.
@@ -25,6 +26,44 @@ def main():
             print(f"File '{file_to_install}' installed at '{dest_file}'.")
         except Exception as e:
             print(f"Error copying file: {e}")
+        sys.exit(0)
+    elif sys.argv[1] == "-v" or sys.argv[1] == "--version":
+        print("WEC Version:", version)
+        sys.exit(0)
+    elif sys.argv[1] == "-h" or sys.argv[1] == "--help":
+        print("WEC - We Enhance Code")
+        print("Usage: wec.py [-i|-c|-v|-h] <source file>")
+        print("Options:")
+        print("  -i <source.wec>  Install a library")
+        print("  -c <source.wec>  Compile to JIT compiled mode using Numba")
+        print("  -x <source.wec>  Compile to executable using Nuitka")
+        print("  -v, --version    Show the version of WEC")
+        print("  -h, --help       Show this help message")
+        sys.exit(0)
+    elif sys.argv[1] == "-c":
+        # --- New: Compilation mode using Numba ---
+        if len(sys.argv) < 3:
+            print("Usage: wec.py -c <source.wec>")
+            sys.exit(1)
+        filename = sys.argv[2]
+        with open(filename, "r", encoding="utf-8") as f:
+            code = f.read()
+        ast = parse_wec(code)
+        try:
+            import numba
+        except ImportError:
+            print("Error: Numba is required for compilation mode. Please install numba.")
+            sys.exit(1)
+        # Set the global compiled mode flag in the interpreter.
+        set_compiled_mode(True)
+        # Cria o interpretador e define uma função de execução compilada.
+        interpreter = Interpreter()
+        def run_interpreter():
+            interpreter.interpret(ast)
+        # Use numba.jit para "compilar" a função forçando o modo objeto, pois o código é dinâmico
+        compiled_run = numba.jit(forceobj=True)(run_interpreter)
+        print("Running in compiled (Numba JIT) mode …")
+        compiled_run()
         sys.exit(0)
     else:
         filename = sys.argv[1]

@@ -1,17 +1,21 @@
 # test_files.sh
 
-python wec.py examples/structs_enums.wec
-python wec.py examples/random.wec
-python wec.py examples/inputs.wec
-python wec.py examples/classes.wec
-python wec.py examples/implements.wec
-python wec.py examples/funcs_vars_etc.wec
-python wec.py examples/arrays.wec
-python wec.py examples/some_builtin_funcs.wec
-python wec.py examples/files.wec
-python wec.py examples/import_test/main.wec
-python wec.py examples/matrix.wec
-python wec.py examples/simple_nn/main.wec
-python wec.py examples/pyimporttest/main.wec
+python wec.py -c examples/structs_enums.wec
+python wec.py -c examples/random.wec
+python wec.py -c examples/inputs.wec
+python wec.py -c examples/classes.wec
+python wec.py -c examples/implements.wec
+python wec.py -c examples/funcs_vars_etc.wec
+python wec.py -c examples/arrays.wec
+python wec.py -c examples/some_builtin_funcs.wec
+python wec.py -c examples/files.wec
+cd examples/import_test
+python ../../wec.py -c main.wec
+cd ../..
+python wec.py -c examples/matrix.wec
+python wec.py -c examples/simple_nn/main.wec
+cd examples/pyimporttest
+python ../../wec.py -c main.wec
+cd ../..
 
 echo "Done!"

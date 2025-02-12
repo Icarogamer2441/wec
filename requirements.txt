@@ -1,1 +1,4 @@
 ply
+numba
+numpy
+nuitka

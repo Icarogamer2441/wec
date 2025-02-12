@@ -6,9 +6,11 @@ dist/
 *.pyw
 *.pyz
 *.pywz
-
+*.spec
 __pycache__/
 *.log*
 test.txt
+*.build*
+*.dist*
 
 examples/*.txt
