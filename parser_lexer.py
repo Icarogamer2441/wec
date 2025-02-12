@@ -30,7 +30,13 @@ reserved = {
     "class": "CLASS",
     "new": "NEW",
     "public": "PUBLIC",
-    "import": "IMPORT"
+    "import": "IMPORT",
+    "while": "WHILE",
+    "for": "FOR",
+    "in": "IN",
+    "python": "PYTHON",
+    "pyfn": "PYFN",
+    "pytype": "PYTYPE"
 }
 
 tokens = [
@@ -43,7 +49,8 @@ tokens = [
     "DOT",
     "EQUAL",
     "PLUS", "MINUS", "TIMES", "DIVIDE", "MOD",
-    "LE", "LT", "GE", "GT", "EQ", "NE"
+    "LE", "LT", "GE", "GT", "EQ", "NE",
+    "CODE_STRING",
 ] + list(reserved.values())
 
 # Tokens com regex simples
@@ -100,6 +107,11 @@ def t_newline(t):
 def t_COMMENT(t):
     r'//.*'
     pass
+
+def t_CODE_STRING(t):
+    r'```([^`]|`[^`]|``[^`])*```'
+    t.value = t.value[3:-3]  # Remove the triple backticks
+    return t
 
 def t_error(t):
     print("Illegal character: '%s'" % t.value[0])
@@ -224,6 +236,17 @@ class ImportDecl:
     def __init__(self, filename):
          self.filename = filename
 
+class WhileStmt:
+    def __init__(self, condition, body):
+        self.condition = condition
+        self.body = body
+
+class ForStmt:
+    def __init__(self, var_name, range_expr, body):
+        self.var_name = var_name
+        self.range_expr = range_expr
+        self.body = body
+
 # ------------------------------------------------------------
 # Regras do Parser
 # ------------------------------------------------------------
@@ -239,17 +262,16 @@ precedence = (
 
 def p_program(p):
     """program : opt_module decl_list"""
-    # Separa decl_list em definições de importações, tipos e funções.
     types = []
     functions = []
     imports = []
     for d in p[2]:
-         if isinstance(d, ImportDecl):
-              imports.append(d)
-         elif isinstance(d, (StructDef, EnumDef, JoinDef, ImplementDecl, ClassDef)):
-              types.append(d)
-         else:
-              functions.append(d)
+        if isinstance(d, ImportDecl):
+            imports.append(d)
+        elif isinstance(d, (StructDef, EnumDef, JoinDef, ImplementDecl, ClassDef, PyTypeDecl, PythonImport, PyFnDecl)):
+            types.append(d)
+        else:
+            functions.append(d)
     # Cria um ambiente de tipos a partir dos nós que têm atributo "name"
     type_env = {t.name: t for t in types if hasattr(t, "name")}
     p[0] = Program(module=p[1], types=types, functions=functions, type_env=type_env, imports=imports)
@@ -274,7 +296,10 @@ def p_decl(p):
              | join_def
              | implement_decl
              | function
-             | import_decl"""
+             | import_decl
+             | python_import
+             | pyfn_decl
+             | pytype_decl"""
     p[0] = p[1]
 
 def p_module_decl(p):
@@ -464,7 +489,9 @@ def p_statement(p):
                  | assignment_statement
                  | return_statement
                  | expr_statement
-                 | if_statement"""
+                 | if_statement
+                 | while_stmt
+                 | for_stmt"""
     p[0] = p[1]
 
 def p_var_decl(p):
@@ -673,6 +700,52 @@ def p_qualified_identifier(p):
 def p_expression_unary(p):
     "expression : MINUS expression %prec UMINUS"
     p[0] = UnaryOp(op='-', value=p[2])
+
+def p_while_stmt(p):
+    """while_stmt : WHILE expression block"""
+    p[0] = WhileStmt(condition=p[2], body=p[3])
+
+def p_for_stmt(p):
+    """for_stmt : FOR IDENT COLON type_expr IN expression block"""
+    p[0] = ForStmt(var_name=p[2], range_expr=p[6], body=p[7])
+
+def p_python_import(p):
+    "python_import : PYTHON IMPORT IDENT SEMI"
+    p[0] = PythonImport(module=p[3])
+
+def p_pyfn_decl(p):
+    """pyfn_decl : PYFN IDENT LPAREN parameters_opt RPAREN ARROW type_expr code_block"""
+    p[0] = PyFnDecl(
+        name=p[2],
+        params=p[4],
+        return_type=p[7],
+        code=p[8]
+    )
+
+def p_code_block(p):
+    "code_block : LBRACE CODE_STRING RBRACE"
+    p[0] = p[2][1:-1].strip()  # Remove the triple backticks
+
+# Add new AST node classes
+class PythonImport:
+    def __init__(self, module):
+        self.module = module
+
+class PyFnDecl:
+    def __init__(self, name, params, return_type, code):
+        self.name = name
+        self.params = params
+        self.return_type = return_type
+        self.code = code
+
+class PyTypeDecl:
+    def __init__(self, name, type_def):
+        self.name = name
+        self.type_def = type_def
+
+def p_pytype_decl(p):
+    """pytype_decl : PYTYPE IDENT EQUAL CODE_STRING SEMI"""
+    p[0] = PyTypeDecl(name=p[2], type_def=p[4])
 
 parser = yacc.yacc()
 

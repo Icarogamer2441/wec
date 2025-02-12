@@ -1,0 +1,9 @@
+module main;
+
+import "./sysos";
+
+fn main() -> i32 {
+    let cwd: sysos::Path = sysos.get_cwd();
+    wec.print("Current directory: ", cwd);
+    return 0;
+}

@@ -4,9 +4,16 @@ Utiliza os nós da AST definidos em parser_lexer.py e executa
 o código interpretado, realizando verificações de tipo simples.
 """
 
-from parser_lexer import Program, FunctionDef, VarDecl, ReturnStmt, ExprStmt, Block, CallExpr, MemberAccess, Literal, Identifier, ListExpr, Arg, IfStmt, BinOp, StructDef, EnumDef, JoinDef, RecordLiteral, ClassDef, NewExpr, Assignment, UnaryOp
+from parser_lexer import (
+    Program, FunctionDef, VarDecl, ReturnStmt, ExprStmt, Block, CallExpr, MemberAccess,
+    Literal, Identifier, ListExpr, Arg, IfStmt, BinOp, StructDef, EnumDef, JoinDef,
+    RecordLiteral, ClassDef, NewExpr, Assignment, UnaryOp, WhileStmt, ForStmt,
+    PythonImport, PyFnDecl, PyTypeDecl, parse_wec
+)
 import re
 import math
+import os
+import sys
 
 # Exceção para controlar a instrução return
 class ReturnException(Exception):
@@ -60,21 +67,28 @@ def get_type(value):
         return "f32"
     elif isinstance(value, str):
         return "str"
+    elif isinstance(value, bytes):
+        return "bytes"
     elif isinstance(value, list):
         if value:
             etype = get_type(value[0])
             return f"{etype}Array"
         else:
             return "EmptyArray"
+    elif hasattr(value, "__fspath__"):  # Verifica se é PathLike
+        return "PathLike"
     else:
         return type(value).__name__
 
-def type_matches(declared, actual):
+def type_matches(declared_type, actual_type):
+    # Se o tipo declarado for sysos::Path, aceita str, bytes ou os.PathLike
+    if declared_type == "sysos::Path":
+        return actual_type in ("str", "bytes") or "PathLike" in actual_type
     # Exact match or if declared is like "i32Array[5]" and actual is "i32Array"
-    if declared == actual:
+    if declared_type == actual_type:
         return True
-    m = re.match(r"([0-9a-zA-Z_]+Array)\[\d+\]", declared)
-    if m and m.group(1) == actual:
+    m = re.match(r"([0-9a-zA-Z_]+Array)\[\d+\]", declared_type)
+    if m and m.group(1) == actual_type:
         return True
     return False
 
@@ -207,13 +221,18 @@ class WECFileBuiltin:
     def __call__(self, *args):
         return self.new_instance(*args)
 
+def wec_range(start, end):
+    return range(start, end)
+
 # ---------------------
 # Classe Interpretador
 # ---------------------
 class Interpreter:
     def __init__(self):
         self.global_env = Environment()
-        self._add_builtins(self.global_env)
+        self.program = None
+        self._add_builtins(self.global_env)  # Basic builtins only
+    
     def _add_builtins(self, env):
         # Cria o módulo wec com os builtins
         # "tf" será um objeto LazyTensorFlow que só importa tensorflow sob demanda
@@ -229,17 +248,127 @@ class Interpreter:
             "join_float": wec_join_float,
             "type_of": wec_type_of,
             "exp": wec_exp,
-            "File": WECFileBuiltin()  # Register the built-in File type.
+            "File": WECFileBuiltin(),  # Register the built-in File type.
+            "range": wec_range,
         }
         env.set("wec", wec_module)
         # ADDED: Register the built-in i32Matrix type with its "random" static method.
         env.set("i32Matrix", {"random": i32Matrix_random})
+
+    def _process_python_imports(self, env):
+        # Processar pytype declarations
+        for decl in self.program.types:
+            if isinstance(decl, PyTypeDecl):
+                try:
+                    ns = {}
+                    exec(decl.type_def, ns)
+                    env.set(decl.name, ns[decl.name])
+                except Exception as e:
+                    raise Exception(f"Erro ao processar pytype {decl.name}: {str(e)}")
+        
+        # Processar módulos Python primeiro
+        modules = {}
+        for decl in self.program.types:
+            if isinstance(decl, PythonImport):
+                try:
+                    imported = __import__(decl.module)
+                    modules[decl.module] = imported
+                except ImportError as e:
+                    raise Exception(f"Failed to import Python module {decl.module}: {str(e)}")
+        
+        # Registrar módulos primeiro
+        for mod_name, mod in modules.items():
+            env.set(mod_name, mod)
+        
+        # Processar pyfn declarations dentro do escopo do módulo
+        for decl in self.program.types:
+            if isinstance(decl, PyFnDecl):
+                def make_pyfn_wrapper(fn_code, params):
+                    def wrapper(*args):
+                        param_bindings = {param.name: arg for param, arg in zip(params, args)}
+                        try:
+                            exec(fn_code, param_bindings)
+                            return param_bindings.get('__return__', None)
+                        except Exception as e:
+                            raise Exception(f"Python function error: {str(e)}")
+                    return wrapper
+                
+                # Registrar a função no módulo correto
+                module_name = self.program.module.name if self.program.module else ""
+                if module_name:
+                    module_env = env.get(module_name, {})
+                    pyfn = make_pyfn_wrapper(decl.code, decl.params)
+                    module_env[decl.name] = pyfn
+                    env.set(module_name, module_env)
+                else:
+                    pyfn = make_pyfn_wrapper(decl.code, decl.params)
+                    env.set(decl.name, pyfn)
+
+    def _process_module_imports(self, imported_ast, env):
+        """Processa declarações Python específicas de um módulo importado"""
+        # Coletar imports Python do módulo
+        py_modules = {}
+        for decl in imported_ast.types:
+            if isinstance(decl, PythonImport):
+                try:
+                    py_modules[decl.module] = __import__(decl.module)
+                except ImportError as e:
+                    raise Exception(f"Failed to import Python module {decl.module}: {str(e)}")
+
+        # Processar pyfn declarations do módulo
+        for decl in imported_ast.types:
+            if isinstance(decl, PyFnDecl):
+                def make_pyfn_wrapper(fn_code, params, modules):
+                    def wrapper(*args):
+                        param_bindings = {param.name: arg for param, arg in zip(params, args)}
+                        param_bindings.update(modules)  # Adiciona módulos importados
+                        try:
+                            exec(fn_code, param_bindings)
+                            return param_bindings.get('__return__', None)
+                        except Exception as e:
+                            raise Exception(f"Python function error: {str(e)}")
+                    return wrapper
+                
+                # Registrar no namespace do módulo
+                pyfn = make_pyfn_wrapper(decl.code, decl.params, py_modules)
+                env.values[decl.name] = pyfn  # Registra diretamente no dict values do Environment
+
+        # Processar pytype declarations do módulo
+        for decl in imported_ast.types:
+            if isinstance(decl, PyTypeDecl):
+                try:
+                    ns = {'__name__': 'wec_type_module'}
+                    ns.update(py_modules)
+                    type_value = eval(decl.type_def, ns)
+                    env.values[decl.name] = type_value  # Registra diretamente no dict values
+                except Exception as e:
+                    raise Exception(f"Erro ao processar pytype {decl.name}: {str(e)}")
+
+        # Registrar o namespace do módulo
+        module_name = imported_ast.module.name if imported_ast.module else os.path.splitext(os.path.basename(imported_ast.filename))[0]
+        self.global_env.set(module_name, env.values)
+
+        # Adicionar funções WEC ao namespace como ModuleFunctions
+        for f in imported_ast.functions:
+            if isinstance(f, FunctionDef):
+                wrapped_func = ModuleFunction(f, env, self)
+                env.set(f.name, wrapped_func)
+        
+        # Registrar o namespace completo
+        self.global_env.set(module_name, env.values)
+
     def interpret(self, program):
-        # First, process import declarations.
+        self.program = program
+        if not hasattr(self.program, 'types'):
+            self.program.types = []
+        
+        # Processar imports Python primeiro
+        self._process_python_imports(self.global_env)
+        
+        # Then process regular imports
         if hasattr(program, "imports"):
             for import_decl in program.imports:
                 self.process_import(import_decl)
-
         # Register type definitions, if any.
         if hasattr(program, "types"):
             for type_def in program.types:
@@ -258,23 +387,24 @@ class Interpreter:
         result = self.call_function(main_func, [])
         # Opcional: retorna ou imprime o valor retornado pela main
         # print("Resultado da main:", result)
+
     def call_function(self, func, args):
-        if not isinstance(func, FunctionDef):
-            raise Exception("Attempt to call a non-function: " + str(func))
-        if len(args) != len(func.params):
-            raise Exception("Incorrect number of arguments in call to " + func.name)
-        local_env = Environment(outer=self.global_env)
-        # Add the function itself to the local environment so it can be called recursively.
-        local_env.set(func.name, func)
-        for param, arg in zip(func.params, args):
+        if isinstance(func, ModuleFunction):
+            # Usar o ambiente do módulo como escopo externo
+            local_env = Environment(outer=func.module_env)
+            func_def = func.func_def
+        else:
+            local_env = Environment(outer=self.global_env)
+            func_def = func
+        
+        for param, arg in zip(func_def.params, args):
             local_env.set(param.name, arg)
+        
         try:
-            self.execute_block(func.body, local_env)
+            return self.execute_block(func_def.body, local_env)
         except ReturnException as ret:
-            if func.return_type and (func.return_type != get_type(ret.value)):
-                raise Exception(f"Return type mismatch in function {func.name}: declared {func.return_type}, but got {get_type(ret.value)}")
             return ret.value
-        return None
+
     def execute_block(self, block, env):
         for stmt in block.statements:
             self.execute(stmt, env)
@@ -315,6 +445,10 @@ class Interpreter:
                         self.execute_block(stmt.else_block, env)
                     else:
                         self.execute(stmt.else_block, env)
+        elif isinstance(stmt, WhileStmt):
+            return self.execute_while(stmt, env)
+        elif isinstance(stmt, ForStmt):
+            return self.execute_for(stmt, env)
         elif isinstance(stmt, Assignment):
             # Execute the assignment by evaluating the right-hand side.
             if hasattr(stmt.target, "index") and stmt.target.__class__.__name__ == "IndexExpr":
@@ -327,13 +461,29 @@ class Interpreter:
                 if isinstance(receiver, dict):
                     receiver[stmt.target.member] = val
                 elif isinstance(receiver, Instance):
-                    receiver.fields[stmt.target.member] = val  # <-- update Instance fields
+                    receiver.fields[stmt.target.member] = val
                 else:
                     setattr(receiver, stmt.target.member, val)
+            elif isinstance(stmt.target, Identifier):
+                value = self.evaluate(stmt.value, env)
+                env.set(stmt.target.name, value)
             else:
                 raise Exception("Invalid assignment target")
         else:
-            raise Exception("Unknown statement: " + str(stmt))
+            raise Exception("Unknown statement type: " + str(stmt))
+    def execute_while(self, stmt, env):
+        while self.evaluate(stmt.condition, env):
+            self.execute_block(stmt.body, env)
+    def execute_for(self, stmt, env):
+        # Evaluate the range expression
+        range_expr = self.evaluate(stmt.range_expr, env)
+        
+        # Iterate through the range
+        for value in range_expr:
+            # Create a new environment for the loop iteration
+            local_env = Environment(outer=env)
+            local_env.set(stmt.var_name, value)
+            self.execute_block(stmt.body, local_env)
     def evaluate(self, expr, env):
         if isinstance(expr, Literal):
             return expr.value
@@ -595,46 +745,61 @@ class Interpreter:
             raise Exception("Attempt to call a non-function: " + str(callee))
 
     def process_import(self, import_decl):
-        from parser_lexer import parse_wec
-        import os, sys
-        filename = import_decl.filename
-        # Determine the full path based on the filename prefix.
-        if filename.startswith("./"):
-            if len(sys.argv) > 1:
-                base_dir = os.path.dirname(os.path.abspath(sys.argv[1]))
+        if isinstance(import_decl, PythonImport):
+            return
+        
+        try:
+            filename = import_decl.filename
+            
+            # Determinar o caminho base
+            if filename.startswith("./"):
+                # Usar diretório do arquivo sendo executado
+                if len(sys.argv) > 1 and sys.argv[1].endswith('.wec'):
+                    base_dir = os.path.dirname(os.path.abspath(sys.argv[1]))
+                else:
+                    base_dir = os.getcwd()
+                full_path = os.path.join(base_dir, filename[2:])
             else:
-                base_dir = os.getcwd()
-            filename = filename[2:]
-            full_path = os.path.join(base_dir, filename)
-        else:
-            base_dir = os.path.join(os.path.expanduser("~"), "weclibs")
-            full_path = os.path.join(base_dir, filename)
-
-        if not full_path.endswith(".wec"):
-            full_path += ".wec"
-
-        if not os.path.exists(full_path):
-            raise Exception(f"Imported file not found: {full_path}")
-
-        with open(full_path, "r", encoding="utf-8") as f:
-            code = f.read()
-        imported_ast = parse_wec(code)
-
-        # Build a module namespace dictionary with the module's definitions.
-        module_namespace = {}
-        for t in imported_ast.types:
-            module_namespace[t.name] = t
-        for f in imported_ast.functions:
-            module_namespace[f.name] = f
-
-        # Determine the module name from the module declaration (if any)
-        if imported_ast.module is not None:
-            mod_name = imported_ast.module.name
-        else:
-            mod_name = os.path.splitext(os.path.basename(filename))[0]
-
-        # Register the imported module under its name to the global environment.
-        self.global_env.set(mod_name, module_namespace)
+                # Usar diretório do usuário/weclibs
+                home_dir = os.path.expanduser("~")
+                full_path = os.path.join(home_dir, "weclibs", filename)
+            
+            # Adicionar extensão .wec se necessário
+            if not full_path.endswith(".wec"):
+                full_path += ".wec"
+            
+            # Verificar se o arquivo existe
+            if not os.path.exists(full_path):
+                raise Exception(f"Arquivo importado não encontrado: {full_path}")
+            
+            with open(full_path, "r", encoding="utf-8") as f:
+                source = f.read()
+            
+            imported_ast = parse_wec(source)
+            
+            # Criar namespace para o módulo importado
+            module_env = Environment()
+            
+            # Processar declarações Python do módulo importado
+            self._process_module_imports(imported_ast, module_env)
+            
+            # Adicionar funções WEC e tipos ao namespace
+            for f in imported_ast.functions:
+                if isinstance(f, FunctionDef):
+                    wrapped_func = ModuleFunction(f, module_env, self)
+                    module_env.set(f.name, wrapped_func)
+            
+            # Adicionar tipos (incluindo classes) ao namespace
+            for t in imported_ast.types:
+                if isinstance(t, (StructDef, EnumDef, JoinDef, ClassDef, PyTypeDecl)):
+                    module_env.set(t.name, t)  # Registra tipos diretamente no module_env
+            
+            # Registrar o namespace completo
+            module_name = imported_ast.module.name if imported_ast.module else os.path.splitext(os.path.basename(filename))[0]
+            self.global_env.set(module_name, module_env.values)
+            
+        except Exception as e:
+            raise Exception(f"Erro importando {import_decl.filename}: {str(e)}")
 
 # Nova classe para representar instâncias de classes
 class Instance:
@@ -1207,3 +1372,18 @@ def i32Matrix_random(rows, cols):
             row.append(random.randint(0, 9))
         m.append(row)
     return m
+
+class ModuleFunction:
+    def __init__(self, func_def, module_env, interpreter):
+        self.func_def = func_def
+        self.module_env = module_env
+        self.interpreter = interpreter
+
+    def __call__(self, *args):
+        local_env = Environment(outer=self.module_env)
+        for param, arg in zip(self.func_def.params, args):
+            local_env.set(param.name, arg)
+        try:
+            return self.interpreter.execute_block(self.func_def.body, local_env)
+        except ReturnException as ret:
+            return ret.value

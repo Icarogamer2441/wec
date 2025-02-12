@@ -1,0 +1,19 @@
+module sysos;
+
+python import sys;
+python import os;
+python import typing;
+
+pyfn exit(code: i32) -> void {
+    ```
+    sys.exit(code)
+    ```
+}
+
+pytype Path = ```typing.Union[str, bytes, os.PathLike]```;
+
+pyfn get_cwd() -> Path {
+    ```
+    __return__ = os.getcwd()
+    ```
+}

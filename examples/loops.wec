@@ -1,0 +1,15 @@
+module loops;
+
+fn main() -> i32 {
+    let i: i32 = 0;
+    while i < 5 {
+        wec.print("While loop iteration: ", i);
+        i = i + 1;
+    }
+
+    for i: i32 in wec.range(0, 5) {
+        wec.print("For loop iteration: ", i);
+    }
+
+    return 0;
+}

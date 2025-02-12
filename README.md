@@ -1,6 +1,7 @@
 # WEC language
 
 WEC is a programming language that is designed to be easy to learn and use.<br>
+wec menas: We Enhance Code (Idea by Force_Six on twitch. the force_six github is [here](https://github.com/moises-elias))
 
 ## Examples
 

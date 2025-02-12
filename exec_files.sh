@@ -12,5 +12,6 @@ python wec.py examples/files.wec
 python wec.py examples/import_test/main.wec
 python wec.py examples/matrix.wec
 python wec.py examples/simple_nn/main.wec
+python wec.py examples/pyimporttest/main.wec
 
 echo "Done!"
