@@ -1,0 +1,21 @@
+module web;
+
+fn main() -> i32 {
+    let server: wec::Server = new wec::Server(
+        "localhost", 
+        "8000"
+    );
+    
+    server.start();
+    wec.print("Server running at http://localhost:8000");
+
+    let html: str = wec::File("index.html", "r").read();
+    
+    server.send(html, "html");
+    while true {
+        let html: str = wec::File("index.html", "r").read();
+    
+        server.send(html, "html");
+    }
+    return 0;
+}

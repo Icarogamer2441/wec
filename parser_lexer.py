@@ -36,7 +36,10 @@ reserved = {
     "in": "IN",
     "python": "PYTHON",
     "pyfn": "PYFN",
-    "pytype": "PYTYPE"
+    "pytype": "PYTYPE",
+    "throw": "THROW",
+    "try": "TRY",
+    "catch": "CATCH"
 }
 
 tokens = [
@@ -246,6 +249,20 @@ class ForStmt:
         self.var_name = var_name
         self.range_expr = range_expr
         self.body = body
+
+class ThrowStmt:
+    def __init__(self, expression, lineno):
+        self.expression = expression
+        self.lineno = lineno
+    def __repr__(self):
+        return f"ThrowStmt({self.expression})"
+
+class TryCatchStmt:
+    def __init__(self, try_block, exc_var, exc_type, catch_block):
+        self.try_block = try_block
+        self.exc_var = exc_var
+        self.exc_type = exc_type
+        self.catch_block = catch_block
 
 # ------------------------------------------------------------
 # Regras do Parser
@@ -491,7 +508,9 @@ def p_statement(p):
                  | expr_statement
                  | if_statement
                  | while_stmt
-                 | for_stmt"""
+                 | for_stmt
+                 | throw_statement
+                 | try_catch_statement"""
     p[0] = p[1]
 
 def p_var_decl(p):
@@ -746,6 +765,19 @@ class PyTypeDecl:
 def p_pytype_decl(p):
     """pytype_decl : PYTYPE IDENT EQUAL CODE_STRING SEMI"""
     p[0] = PyTypeDecl(name=p[2], type_def=p[4])
+
+def p_throw_statement(p):
+    "throw_statement : THROW expression SEMI"
+    p[0] = ThrowStmt(expression=p[2], lineno=p.lineno(1))
+
+def p_try_catch_statement(p):
+    """try_catch_statement : TRY block CATCH LPAREN IDENT COLON type_expr RPAREN block"""
+    p[0] = TryCatchStmt(
+        try_block=p[2],
+        exc_var=p[5],
+        exc_type=p[7],
+        catch_block=p[9]
+    )
 
 parser = yacc.yacc()
 

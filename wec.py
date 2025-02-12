@@ -2,15 +2,17 @@
 import sys
 from parser_lexer import parse_wec
 from interpreter import Interpreter, set_compiled_mode
+from errors import WECError
+import traceback
 
 def main():
-    version = "1.0.0"
+    version = "1.0.1"
     if len(sys.argv) < 2:
         print("Usage: wec.py [-i|-c|-x|-v|-h] <source file>")
         sys.exit(1)
 
     # Verifica se o modo de instalação foi passado.
-    if sys.argv[1] == "-i":
+    if sys.argv[1] == "-i" or sys.argv[1] == "--install":
         if len(sys.argv) < 3:
             print("Usage: wec.py -i <source.wec>")
             sys.exit(1)
@@ -40,7 +42,7 @@ def main():
         print("  -v, --version    Show the version of WEC")
         print("  -h, --help       Show this help message")
         sys.exit(0)
-    elif sys.argv[1] == "-c":
+    elif sys.argv[1] == "-c" or sys.argv[1] == "--compile":
         # --- New: Compilation mode using Numba ---
         if len(sys.argv) < 3:
             print("Usage: wec.py -c <source.wec>")
@@ -63,7 +65,14 @@ def main():
         # Use numba.jit para "compilar" a função forçando o modo objeto, pois o código é dinâmico
         compiled_run = numba.jit(forceobj=True)(run_interpreter)
         print("Running in compiled (Numba JIT) mode …")
-        compiled_run()
+        try:
+            compiled_run()
+        except WECError as e:
+            print(str(e))
+        except Exception as e:
+            print(f"Internal error: {str(e)}")
+            if "-d" in sys.argv:
+                traceback.print_exc()
         sys.exit(0)
     else:
         filename = sys.argv[1]
@@ -73,7 +82,16 @@ def main():
         ast = parse_wec(code)
         # Cria o interpretador e executa a AST.
         interpreter = Interpreter()
-        interpreter.interpret(ast)
+        try:
+            interpreter.interpret(ast)
+        except WECError as e:
+            print(str(e))
+            sys.exit(1)
+        except Exception as e:
+            print(f"Internal error: {str(e)}")
+            if "-d" in sys.argv:
+                traceback.print_exc()
+            sys.exit(1)
 
 if __name__ == '__main__':
     main()

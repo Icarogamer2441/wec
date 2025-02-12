@@ -17,5 +17,9 @@ python wec.py -c examples/simple_nn/main.wec
 cd examples/pyimporttest
 python ../../wec.py -c main.wec
 cd ../..
+cd examples/webtest
+python ../../wec.py -c web.wec
+cd ../..
+python wec.py -c examples/loops.wec
 
 echo "Done!"

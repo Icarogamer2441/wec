@@ -8,12 +8,18 @@ from parser_lexer import (
     Program, FunctionDef, VarDecl, ReturnStmt, ExprStmt, Block, CallExpr, MemberAccess,
     Literal, Identifier, ListExpr, Arg, IfStmt, BinOp, StructDef, EnumDef, JoinDef,
     RecordLiteral, ClassDef, NewExpr, Assignment, UnaryOp, WhileStmt, ForStmt,
-    PythonImport, PyFnDecl, PyTypeDecl, parse_wec
+    PythonImport, PyFnDecl, PyTypeDecl, parse_wec, ThrowStmt, TryCatchStmt
 )
 import re
 import math
 import os
 import sys
+from errors import (
+    WECError, UserInterruptError, TypeMismatchError, DivisionByZeroError,
+    UndefinedVariableError, IndexOutOfBoundsError, FunctionArgumentError,
+    FileNotFoundError, ImportError, InvalidOperationError, KeyError,
+    RangeError, MutabilityError, WECException
+)
 
 # NEW: Global flag for compiled mode (set via wec.py -c) and a setter function.
 COMPILED_MODE = False
@@ -38,10 +44,13 @@ class Environment:
         elif self.outer:
             return self.outer.get(key)
         else:
-            # ADDED: Provide file and line number info for easier debugging.
             import traceback
-            tb = traceback.extract_stack()[-2]  # get caller's info
-            raise Exception(f"Undefined variable: {key} (at {tb.filename}, line {tb.lineno})")
+            tb = traceback.extract_stack()[-2]
+            raise UndefinedVariableError(
+                name=key,
+                line=tb.lineno,
+                file=tb.filename
+            )
     def set(self, key, value):
         self.values[key] = value
     def get_type(self, key):
@@ -97,7 +106,7 @@ def type_matches(declared_type, actual_type):
     m = re.match(r"([0-9a-zA-Z_]+Array)\[\d+\]", declared_type)
     if m and m.group(1) == actual_type:
         return True
-    return False
+    raise TypeMismatchError(declared_type, actual_type)
 
 # ---------------------
 # Implementação de Builtins
@@ -224,7 +233,7 @@ class WECFileBuiltin:
         elif len(args) == 2:
             return WECFile(args[0], args[1])
         else:
-            raise Exception("File constructor requires 0 or 2 arguments: filename and mode")
+            raise FunctionArgumentError(2, len(args))
     def __call__(self, *args):
         return self.new_instance(*args)
 
@@ -257,6 +266,8 @@ class Interpreter:
             "exp": wec_exp,
             "File": WECFileBuiltin(),  # Register the built-in File type.
             "range": wec_range,
+            "Server": WECServerBuiltin(),
+            "Exception": WECException
         }
         env.set("wec", wec_module)
         # ADDED: Register the built-in i32Matrix type with its "random" static method.
@@ -365,35 +376,34 @@ class Interpreter:
         self.global_env.set(module_name, env.values)
 
     def interpret(self, program):
-        self.program = program
-        if not hasattr(self.program, 'types'):
-            self.program.types = []
-        
-        # Processar imports Python primeiro
-        self._process_python_imports(self.global_env)
-        
-        # Then process regular imports
-        if hasattr(program, "imports"):
-            for import_decl in program.imports:
-                self.process_import(import_decl)
-        # Register type definitions, if any.
-        if hasattr(program, "types"):
-            for type_def in program.types:
-                self.global_env.set(type_def.name, type_def)
-        # ADDED: Register class definitions to support the new "new NeuralNetwork(...)" syntax.
-        if hasattr(program, "classes"):
-            for class_def in program.classes:
-                self.global_env.set(class_def.name, class_def)
-        for func in program.functions:
-            self.global_env.set(func.name, func)
-        # Look for the main function
         try:
+            self.program = program
+            if not hasattr(self.program, 'types'):
+                self.program.types = []
+            
+            # Processar imports Python primeiro
+            self._process_python_imports(self.global_env)
+            
+            # Then process regular imports
+            if hasattr(program, "imports"):
+                for import_decl in program.imports:
+                    self.process_import(import_decl)
+            # Register type definitions, if any.
+            if hasattr(program, "types"):
+                for type_def in program.types:
+                    self.global_env.set(type_def.name, type_def)
+            # ADDED: Register class definitions
+            if hasattr(program, "classes"):
+                for class_def in program.classes:
+                    self.global_env.set(class_def.name, class_def)
+            for func in program.functions:
+                self.global_env.set(func.name, func)
+            
             main_func = self.global_env.get("main")
-        except Exception:
-            raise Exception("Main function not defined.")
-        result = self.call_function(main_func, [])
-        # Opcional: retorna ou imprime o valor retornado pela main
-        # print("Resultado da main:", result)
+            result = self.call_function(main_func, [])
+            return result
+        except KeyboardInterrupt:
+            raise UserInterruptError()
 
     def call_function(self, func, args):
         if isinstance(func, ModuleFunction):
@@ -416,7 +426,26 @@ class Interpreter:
         for stmt in block.statements:
             self.execute(stmt, env)
     def execute(self, stmt, env):
-        if isinstance(stmt, VarDecl):
+        if isinstance(stmt, TryCatchStmt):
+            try:
+                self.execute_block(stmt.try_block, env)
+            except WECError as e:
+                # Resolve exception type from string (e.g. "wec::Exception" -> WECException)
+                exc_type = self._resolve_exception_type(stmt.exc_type, env)
+                if isinstance(e, exc_type) or issubclass(type(e), exc_type):
+                    catch_env = Environment(outer=env)
+                    catch_env.set(stmt.exc_var, e)
+                    self.execute_block(stmt.catch_block, catch_env)
+                else:
+                    raise
+        elif isinstance(stmt, ThrowStmt):
+            exc_value = self.evaluate(stmt.expression, env)
+            raise WECException(
+                message=str(exc_value),
+                line=stmt.lineno,
+                file=stmt.filename if hasattr(stmt, 'filename') else None
+            )
+        elif isinstance(stmt, VarDecl):
             if stmt.initializer is None:
                 if stmt.type.endswith("List"):
                     value = WECList()
@@ -512,14 +541,19 @@ class Interpreter:
             left = self.evaluate(expr.left, env)
             right = self.evaluate(expr.right, env)
             op = expr.op
-            if op == '+':
+            if op == '/':
+                if right == 0:
+                    raise DivisionByZeroError(
+                        line=expr.lineno,
+                        file=expr.filename
+                    )
+                return left / right
+            elif op == '+':
                 return left + right
             elif op == '-':
                 return left - right
             elif op == '*':
                 return left * right
-            elif op == '/':
-                return left / right
             elif op == '%':
                 return left % right
             elif op == '<=':
@@ -535,7 +569,12 @@ class Interpreter:
             elif op == '!=':
                 return left != right
             else:
-                raise Exception("Unknown binary operator: " + op)
+                raise InvalidOperationError(
+                    operation=op,
+                    types=(type(left), type(right)),
+                    line=expr.lineno,
+                    file=expr.filename
+                )
         elif isinstance(expr, RecordLiteral):
             record = {}
             for key, field_expr in expr.fields.items():
@@ -807,6 +846,20 @@ class Interpreter:
             
         except Exception as e:
             raise Exception(f"Erro importando {import_decl.filename}: {str(e)}")
+
+    def _resolve_exception_type(self, type_str, env):
+        if type_str.startswith("wec::"):
+            # Handle built-in exceptions
+            exc_name = type_str.split("::")[-1]
+            from errors import WECException  # Add explicit import
+            return {
+                "Exception": WECException,
+                "FileNotFoundError": FileNotFoundError,
+                # Add other exceptions as needed
+            }.get(exc_name, WECError)
+        else:
+            # Look up custom exception types
+            return env.get(type_str)
 
 # Nova classe para representar instâncias de classes
 class Instance:
@@ -1421,3 +1474,76 @@ class ModuleFunction:
             return self.interpreter.execute_block(self.func_def.body, local_env)
         except ReturnException as ret:
             return ret.value
+
+class WECServerBuiltin:
+    def __init__(self):
+        self.builtin_file = True
+        self.host = "localhost"
+        self.port = 8000
+        self.running = False
+        self.content = {"html": "", "css": "", "js": ""}
+        self.wec_type = "wec::Server"
+        self.server = None  # Add reference to server instance
+
+    def new_instance(self, *args):
+        instance = WECServerBuiltin()
+        if len(args) < 2:
+            raise FunctionArgumentError(2, len(args))
+            
+        instance.host = args[0]
+        instance.port = int(args[1])
+        
+        # Load files if provided
+        if len(args) >= 3:
+            try:
+                with open(os.path.join(os.path.dirname(__file__), args[2]), 'r') as f:
+                    instance.content['html'] = f.read()
+            except FileNotFoundError:
+                raise FileNotFoundError(args[2])
+                
+        if len(args) >= 4:
+            try:
+                with open(os.path.join(os.path.dirname(__file__), args[3]), 'r') as f:
+                    instance.content['css'] = f.read()
+            except FileNotFoundError:
+                raise FileNotFoundError(args[3])
+        
+        return instance
+
+    def start(self):
+        if not self.running:
+            self.running = True
+            from http.server import HTTPServer, SimpleHTTPRequestHandler
+            import threading
+            
+            class Handler(SimpleHTTPRequestHandler):
+                def do_GET(self):
+                    server = self.server.server_instance
+                    try:
+                        if self.path == '/':
+                            content_type = 'text/html'
+                            content = server.content['html']
+                        elif self.path == '/style.css':
+                            content_type = 'text/css' 
+                            content = server.content['css']
+                        else:
+                            self.send_response(404)
+                            self.end_headers()
+                            return
+                            
+                        self.send_response(200)
+                        self.send_header('Content-type', content_type)
+                        self.end_headers()
+                        self.wfile.write(content.encode())
+                        
+                    except KeyError as e:
+                        raise FileNotFoundError(f"Resource {self.path} not configured in server")
+                        
+            self.server = HTTPServer((self.host, self.port), Handler)
+            self.server.server_instance = self
+            self.server_thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+            self.server_thread.start()
+
+    def send(self, content, content_type):
+        if content_type in self.content:
+            self.content[content_type] = content
