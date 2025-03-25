@@ -663,20 +663,29 @@ def p_empty(p):
     p[0] = None
 
 def p_if_statement(p):
-    """if_statement : IF expression block else_clause_opt %prec IFX"""
-    if p[4] is None:
-        p[0] = IfStmt(condition=p[2], then_block=p[3], elif_blocks=[], else_block=None)
+    """if_statement : IF expression block elif_clauses else_clause_opt %prec IFX"""
+    p[0] = IfStmt(condition=p[2], then_block=p[3], elif_blocks=p[4], else_block=p[5])
+
+def p_elif_clauses(p):
+    """elif_clauses : elif_clauses elif_clause
+                    | elif_clause
+                    | empty"""
+    if len(p) == 2:
+        p[0] = [] if p[1] is None else [p[1]]
     else:
-        p[0] = IfStmt(condition=p[2], then_block=p[3], elif_blocks=[], else_block=p[4])
+        p[0] = p[1] + [p[2]]
+
+def p_elif_clause(p):
+    """elif_clause : ELSE IF expression block"""
+    p[0] = (p[3], p[4])
 
 def p_else_clause_opt(p):
-    """else_clause_opt : ELSE if_statement
-                        | ELSE block
-                        | empty"""
-    if len(p) == 1:
-        p[0] = None
-    else:
+    '''else_clause_opt : ELSE block
+                        | empty'''
+    if len(p) == 3:
         p[0] = p[2]
+    else:
+        p[0] = None
 
 def p_implement_decl(p):
     "implement_decl : IMPLEMENT IDENT USES IDENT LBRACE method_list RBRACE"

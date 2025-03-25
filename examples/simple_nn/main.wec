@@ -1,40 +1,51 @@
 module main;
 
+fn round(v: f32) -> i32 {
+    if (v >= 0.9) {
+        return 1;
+    }
+    return 0;
+}
+
 class NeuralNetwork {
     let layers: i32;
     let neurons: i32;
     let weights: i32Matrix;
     let biases: i32Matrix;
+    let last_inputs: i32Matrix;
+    let lr: f32;
     
-    fn constructor(layers: i32, neurons: i32) -> void {
-        this.layers = layers;
+    fn constructor(input_size: i32, neurons: i32) -> void {
+        this.layers = input_size;
         this.neurons = neurons;
-        this.weights = i32Matrix.random(layers, neurons);
-        this.biases = i32Matrix.random(layers, 1);
+        this.weights = i32Matrix.random(neurons, input_size);
+        this.biases = i32Matrix.random(neurons, 1);
+        this.lr = 0.01;
     }
     
     fn feedforward(inputs: i32Matrix) -> i32Matrix {
+        this.last_inputs = inputs;
         let z: i32Matrix = this.weights.dot(inputs) + this.biases;
         return z;
     }
 
-    fn sigmoid(x: i32) -> i32 {
+    fn sigmoid(x: i32Matrix) -> i32Matrix {
         return 1 / (1 + wec.exp(-x));
     }
     
-    fn sigmoid_derivative(x: i32) -> i32 {
-        let sigmoid_x: i32 = this.sigmoid(x);
+    fn sigmoid_derivative(x: i32Matrix) -> i32Matrix {
+        let sigmoid_x: i32Matrix = this.sigmoid(x);
         return sigmoid_x * (1 - sigmoid_x);
     }
 
-    fn backpropagate(inputs: i32Matrix, outputs: i32Matrix) -> void {
-        let z: i32Matrix = this.feedforward(inputs);
+    fn backpropagate(outputs: i32Matrix) -> void {
+        let z: i32Matrix = this.feedforward(this.last_inputs);
         let a: i32Matrix = this.sigmoid(z);
         let delta: i32Matrix = a - outputs;
-        let d_weights: i32Matrix = delta.dot(inputs.transpose());
+        let d_weights: i32Matrix = delta.dot(this.last_inputs.transpose());
         let d_biases: i32Matrix = delta;
-        this.weights = this.weights - d_weights;
-        this.biases = this.biases - d_biases;
+        this.weights = this.weights - (this.lr * d_weights);
+        this.biases = this.biases - (this.lr * d_biases);
     }
 }
 
@@ -42,12 +53,26 @@ fn main() -> i32 {
     let nn: NeuralNetwork = new NeuralNetwork(2, 1);
     let inputs: i32Matrix;
     let outputs: i32Matrix;
-    inputs.to(1);
+    inputs.to(2);
     outputs.to(1);
-    inputs.append([1, 2]);
-    outputs.append([0]);
-    nn.backpropagate(inputs, outputs);
+    inputs.append([[0, 0, 1, 1], [0, 1, 0, 1]]);
+    outputs.append([[0, 0, 0, 1]]);
+    
+    for i: i32 in wec.range(0, 1000) {
+        nn.feedforward(inputs);
+        nn.backpropagate(outputs);
+    }
     let result: i32Matrix = nn.feedforward(inputs);
-    wec.print(result[0][0].to_int());
+    let activated: i32Matrix = nn.sigmoid(result);
+    // make it show everything but rounded
+    let rounded: i32Matrix;
+    rounded.to(1);
+    for j: i32 in wec.range(0, activated[0].length()) {
+        let raw: f32 = activated[0][j];
+        let r: i32 = round(raw);
+        rounded.append([r]);
+    }
+    wec.print("Activated outputs: ", activated);
+    wec.print("Rounded outputs: ", rounded);
     return 0;
 }

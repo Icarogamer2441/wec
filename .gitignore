@@ -13,5 +13,6 @@ test.txt
 *.build*
 *.dist*
 *.xml
+tests/
 
 examples/*.txt
